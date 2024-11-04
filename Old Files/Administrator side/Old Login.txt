@@ -1,0 +1,103 @@
+import 'package:flutter/material.dart';
+
+class LoginPage extends StatefulWidget {
+  @override
+  _LoginPageState createState() => _LoginPageState(); // Creates a state of the login page for use through override
+}
+
+class _LoginPageState extends State<LoginPage> { // Overloading
+  // Uniquely identifies the form widget  
+  final _formKey = GlobalKey<FormState>(); 
+  
+  // Empty initial strings
+  String _email = ''; 
+  String _password = '';
+  
+  // Login Function
+  void _login() {
+    if (_formKey.currentState!.validate()) {
+      // Process login (call your Firebase or backend service here)
+      print('Email: $_email, Password: $_password');
+    }
+  }
+
+  // Build method is overidden...
+  @override
+
+  // ... To return a widget based on current state
+  Widget build(BuildContext context) {
+    // Basic structure
+    return Scaffold(
+      // Creates appbar at the top of the screen
+      appBar: AppBar(
+        title: Text('Login'),
+      ),
+
+      
+
+      // Contains main content of the screen
+      body: Padding(
+
+        // Uniform padding of 16 pixels on all sides, ensuring the fields stay away from the sides of the screen
+        padding: const EdgeInsets.all(16.0),
+
+        // Form object is ready to receive information
+        child: Form(
+
+          // Linking form to specially generated key earlier
+          key: _formKey,
+
+          // Arranges the list vertically...
+          child: Column(
+            // And creates items in the list...
+            children: [
+              // Creates the first text field for ID
+              TextFormField(
+                // User ID field w/ simple validation
+                decoration: InputDecoration(labelText: 'User ID'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your ID';
+                  } else {
+                    return null;
+                  }      
+                },
+
+                // Stores into email variable
+                onChanged: (value) {
+                  _email = value;
+                },
+              ),
+
+              // Another field: the password input
+              TextFormField(
+                decoration: InputDecoration(labelText: 'Password'),
+                obscureText: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your password';
+                  } else {
+                    return null;
+                  }
+                  
+                },
+                onChanged: (value) {
+                  _password = value;
+                },
+              ),
+
+              // Add space - an empty box between the textfields and button
+              SizedBox(height: 20),
+
+              // Button function:
+              ElevatedButton(
+                onPressed: _login,
+                child: Text('Login'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

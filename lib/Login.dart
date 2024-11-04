@@ -1,8 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'ConnectionServices.dart';
 
 class LoginPage extends StatefulWidget {
   @override
   _LoginPageState createState() => _LoginPageState(); // Creates a state of the login page for use through override
+}
+
+// Notification function
+void showNotification(BuildContext context, String message, String Title) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text(Title),
+        content: Text(message),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close the dialog
+            },
+            child: Text('OK'),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 class _LoginPageState extends State<LoginPage> { // Overloading
@@ -10,21 +34,41 @@ class _LoginPageState extends State<LoginPage> { // Overloading
   final _formKey = GlobalKey<FormState>(); 
   
   // Empty initial strings
-  String _email = ''; 
+  String _ID = ''; 
   String _password = '';
   
   // Login Function
-  void _login() {
+  void _login() async {
     if (_formKey.currentState!.validate()) {
+      String firstTwoLetters = _ID.substring(0, 2);
+
+      WidgetsFlutterBinding.ensureInitialized();
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+      if (firstTwoLetters == "AD") {
+
+        // Fetch users as a backend task
+        LoginSearchupService userService = LoginSearchupService();
+        List<Map<String, dynamic>> admins = await userService.fetchUsers("Administrators");
+
+        print("Fetched Users: $admins");
+      } else if (firstTwoLetters == "SU") {
+        // Logic for student login
+      } else if (firstTwoLetters == "TC") {
+        // Logic for Lecturer or teacher login
+      } else {
+        showNotification(context, 'Please enter a valid ID.', 'Invalid User ID.');
+      }
+
       // Process login (call your Firebase or backend service here)
-      print('Email: $_email, Password: $_password');
+      print('ID: $_ID, Password: $_password');
     }
   }
 
   // Build method is overidden...
   @override
 
-  // ... To return a widger based on current state
+  // ... To return a widget based on current state
   Widget build(BuildContext context) {
     // Basic structure
     return Scaffold(
@@ -79,13 +123,13 @@ class _LoginPageState extends State<LoginPage> { // Overloading
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter your ID';
-                          } else {
-                            return null;
-                          }      
+                          } else if (value.length <= 2) {
+                            return "Please enter a valid user ID";                            
+                          } return null;     
                         },
                         // Stores into email variable
                         onChanged: (value) {
-                          _email = value;
+                          _ID = value;
                         },
                       ),
 

@@ -1,0 +1,17 @@
+Future<void> main() async {
+  runApp(const MyApp());
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform,);
+
+  var db = FirebaseFirestore.instance;
+
+  // Create a new user with first and last name
+  final user = <String, dynamic>{
+    "first": "Mada", 
+    "last": "Leslie",
+    "born": 1832,
+  };
+
+  await db.collection("users").add(user);
+
+}

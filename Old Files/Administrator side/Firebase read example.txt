@@ -1,0 +1,89 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
+Future<void> main() async {
+  // Ensure Flutter widgets are initialized
+  WidgetsFlutterBinding.ensureInitialized();
+  // Initialize Firebase
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Run the app
+  runApp(const MyApp());
+}   
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Firestore Read Demo',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      home: const MyHomePage(title: 'Firestore Read Example'),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key, required this.title});
+
+  final String title;
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  // List to hold user data
+  List<Map<String, dynamic>> _users = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch user data from Firestore when the widget is initialized
+    fetchUsers();
+  }
+
+  // Function to fetch users from Firestore
+  Future<void> fetchUsers() async {
+    var db = FirebaseFirestore.instance;
+
+    try {
+      // Get the users collection
+      QuerySnapshot snapshot = await db.collection('Administrators').get();
+      // Map the data into a list
+      setState(() {
+        _users = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+      });
+    } catch (e) {
+      print("Failed to fetch users: $e");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Center(
+        child: _users.isEmpty
+            ? const CircularProgressIndicator() // Show a loading indicator while fetching data
+            : ListView.builder(
+                itemCount: _users.length,
+                itemBuilder: (context, index) {
+                  // Display user data in a list
+                  return ListTile(
+                    title: Text('${_users[index]['Admin ID']}'),
+                    subtitle: Text('Born: ${_users[index]['Admin Password']}'),
+                  );
+                },
+              ),
+      ),
+    );
+  }
+}

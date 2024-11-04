@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "443690479496",
+    "project_id": "canvascast-7c86e",
+    "storage_bucket": "canvascast-7c86e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:443690479496:android:a1db73fe5932931da1d43d",
+        "android_client_info": {
+          "package_name": "com.G7.CanvasCast"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWKk2BFUVt5jzhRzDsuvdnMSYBPy0CCXk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

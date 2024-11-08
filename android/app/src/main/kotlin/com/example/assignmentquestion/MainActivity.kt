@@ -1,4 +1,4 @@
-package com.example.assignmentquestion
+package com.G7.CanvasCast
 
 import io.flutter.embedding.android.FlutterActivity
 

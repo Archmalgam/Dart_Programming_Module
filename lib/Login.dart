@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import 'Lecturer/LecturerHomePage.dart';
 import 'ConnectionServices.dart';
 
 class LoginPage extends StatefulWidget {
@@ -37,33 +36,58 @@ class _LoginPageState extends State<LoginPage> { // Overloading
   String _ID = ''; 
   String _password = '';
   
-  // Login Function
   void _login() async {
-    if (_formKey.currentState!.validate()) {
-      String firstTwoLetters = _ID.substring(0, 2);
+  if (_formKey.currentState!.validate()) {
+    String firstTwoLetters = _ID.substring(0, 2);
 
-      WidgetsFlutterBinding.ensureInitialized();
-      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    LoginSearchupService userService = LoginSearchupService();
+    List<Map<String, dynamic>> users;
+    bool isValidUser = false;
 
-      if (firstTwoLetters == "AD") {
-
-        // Fetch users as a backend task
-        LoginSearchupService userService = LoginSearchupService();
-        List<Map<String, dynamic>> admins = await userService.fetchUsers("Administrators");
-
-        print("Fetched Users: $admins");
-      } else if (firstTwoLetters == "SU") {
-        // Logic for student login
-      } else if (firstTwoLetters == "TC") {
-        // Logic for Lecturer or teacher login
-      } else {
-        showNotification(context, 'Please enter a valid ID.', 'Invalid User ID.');
-      }
-
-      // Process login (call your Firebase or backend service here)
-      print('ID: $_ID, Password: $_password');
+    switch (firstTwoLetters) {
+      case "AD":
+        users = await userService.fetchAdministrators();
+        isValidUser = users.any((user) => user['ID'] == _ID && user['Password'] == _password);
+        break;
+      case "SU":
+        // Assuming fetchStudents exists and works similarly
+        users = await userService.fetchStudents();
+        isValidUser = users.any((user) => user['ID'] == _ID && user['Password'] == _password);
+        break;
+      case "LC":
+        users = await userService.fetchLecturers();
+        isValidUser = users.any((user) => user['ID'] == _ID && user['Password'] == _password);
+        break;
+      default:
+        showNotification(context, 'Please enter a valid ID.', 'Invalid User ID');
+        return;
     }
+
+    if (isValidUser) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => resolveHomePage(firstTwoLetters)),
+      );
+    } else {
+      showNotification(context, 'Invalid ID or Password.', 'Login Failed');
+    }
+
+    print('ID: $_ID, Password: $_password');
   }
+}
+
+Widget resolveHomePage(String prefix) {
+  switch (prefix) {
+    case "AD":
+      return LecturerHomePage();
+    case "LC":
+      return LecturerHomePage();
+    case "SU":
+      return LecturerHomePage();
+    default:
+      return LoginPage(); // Should not happen
+  }
+}
 
   // Build method is overidden...
   @override

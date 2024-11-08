@@ -1,26 +1,36 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Searches database for login credentials
 class LoginSearchupService {
-
-  // Initialises database
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // Searches for a user with the given username and password
-  Future<List<Map<String, dynamic>>> fetchUsers(String Database) async {
+  // General method to fetch users based on collection and field names
+  Future<List<Map<String, dynamic>>> fetchUsers(String collection, String idField, String passwordField) async {
     try {
-
-      // Retrieve all documents from the 'users' collection in the database
-      QuerySnapshot snapshot = await _db.collection(Database).get();
+      QuerySnapshot snapshot = await _db.collection(collection).get();
       return snapshot.docs
           .map((doc) => {
-                'ID': doc['Admin ID'],
-                'Password': doc['Admin Password'],
+                'ID': doc[idField],
+                'Password': doc[passwordField],
               })
           .toList();
     } catch (e) {
-      print("Error fetching users: $e");
+      print("Error fetching users from $collection: $e");
       return []; // Return an empty list on error
     }
+  }
+
+  // Fetches administrator credentials
+  Future<List<Map<String, dynamic>>> fetchAdministrators() async {
+    return fetchUsers("Administrators", "Admin ID", "Admin Password");
+  }
+
+  // Fetches lecturer credentials
+  Future<List<Map<String, dynamic>>> fetchLecturers() async {
+    return fetchUsers("Lecturers", "Lecturer ID", "Lecturer Password");
+  }
+
+  // Fetches student credentials
+  Future<List<Map<String, dynamic>>> fetchStudents() async {
+    return fetchUsers("Students", "Student ID", "Student Password");
   }
 }

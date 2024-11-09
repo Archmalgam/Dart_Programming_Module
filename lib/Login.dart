@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'Lecturer/LecturerHomePage.dart';
+import 'Lecturer/Lecturer_navigation_bar.dart';
 import 'ConnectionServices.dart';
 
 class LoginPage extends StatefulWidget {
@@ -79,11 +79,11 @@ class _LoginPageState extends State<LoginPage> { // Overloading
 Widget resolveHomePage(String prefix) {
   switch (prefix) {
     case "AD":
-      return LecturerHomePage();
+      return LecturerMainScreen();
     case "LC":
-      return LecturerHomePage();
+      return LecturerMainScreen();
     case "SU":
-      return LecturerHomePage();
+      return LecturerMainScreen();
     default:
       return LoginPage(); // Should not happen
   }

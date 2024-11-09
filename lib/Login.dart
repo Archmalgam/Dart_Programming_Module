@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'Lecturer/LecturerHomePage.dart';
 import 'ConnectionServices.dart';
+import 'Student/Request.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -49,7 +50,7 @@ class _LoginPageState extends State<LoginPage> { // Overloading
         users = await userService.fetchAdministrators();
         isValidUser = users.any((user) => user['ID'] == _ID && user['Password'] == _password);
         break;
-      case "SU":
+      case "ST":
         // Assuming fetchStudents exists and works similarly
         users = await userService.fetchStudents();
         isValidUser = users.any((user) => user['ID'] == _ID && user['Password'] == _password);
@@ -82,8 +83,8 @@ Widget resolveHomePage(String prefix) {
       return LecturerHomePage();
     case "LC":
       return LecturerHomePage();
-    case "SU":
-      return LecturerHomePage();
+    case "ST":
+      return SubmitRequestPage();
     default:
       return LoginPage(); // Should not happen
   }

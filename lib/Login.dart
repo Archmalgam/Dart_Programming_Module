@@ -88,7 +88,7 @@ Widget resolveHomePage(String prefix, {required String studentId}) {
       return LecturerHomePage();
     case "ST":
       SubmitRequestPage(studentId: studentId);
-      return StudentHomePage(); // Pass studentId here
+      return StudentHomePage(studentId: studentId); // Pass studentId here
     default:
       return LoginPage(); // Should not happen
   }

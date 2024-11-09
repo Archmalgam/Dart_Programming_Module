@@ -9,6 +9,11 @@ import 'Function/RequestPage.dart';
 // import 'Function/student_requests_page.dart';
 
 class DrawerNavigation extends StatelessWidget {
+  final String studentId; // Add studentId as a parameter
+
+  DrawerNavigation(
+      {required this.studentId}); // Constructor to accept studentId
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -21,13 +26,21 @@ class DrawerNavigation extends StatelessWidget {
             ),
             child: Text(
               'Students Features',
-              style: TextStyle(color: Color(0xFF0AC5A8), fontSize: 24), // Teal for header text
+              style: TextStyle(
+                  color: Color(0xFF0AC5A8),
+                  fontSize: 24), // Teal for header text
             ),
           ),
           _createDrawerItem(
             icon: Icons.schedule,
-            text: 'Submit Requests to Teachers ',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => SubmitRequestPage(studentId: '',))),
+            text: 'Submit Requests to Teachers',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SubmitRequestPage(
+                    studentId: studentId), // Pass studentId here
+              ),
+            ),
             iconColor: Color(0xFF5E738E), // Grey Blue for icons
             textColor: Color(0xFF5E738E), // Grey Blue for text
           ),

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'drawer_navigation.dart';
 
 class StudentHomePage extends StatelessWidget {
+  final String studentId;
+
+  StudentHomePage({required this.studentId});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -15,7 +19,7 @@ class StudentHomePage extends StatelessWidget {
         ),
         backgroundColor: Color(0xFF2C3C5B), // Dark Blue for AppBar background
       ),
-      drawer: DrawerNavigation(),
+      drawer: DrawerNavigation(studentId: studentId),
       body: Stack(
         children: [
           // Header section with date and greeting

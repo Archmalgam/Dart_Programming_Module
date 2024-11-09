@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'LecturerHomePage.dart'; // Adjust import as per your project structure
+import 'Function/timetable_page.dart';
 
 class LecturerMainScreen extends StatefulWidget {
   final String lecturerName;
@@ -20,7 +21,7 @@ class _LecturerMainScreenState extends State<LecturerMainScreen> {
     super.initState();
     pages = [
       LecturerHomePage(lecturerName: widget.lecturerName), // Pass name to LecturerHomePage
-      Scaffold(body: Center(child: Text("Timetable Page"))),
+      TimetablePage(),
       Scaffold(body: Center(child: Text("Calendar Page"))),
       Scaffold(body: Center(child: Text("Chat Page"))),
     ];
@@ -36,8 +37,8 @@ class _LecturerMainScreenState extends State<LecturerMainScreen> {
         selectedItemColor: Colors.black,
         type: BottomNavigationBarType.fixed,
         currentIndex: selectedIndex,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
+        showSelectedLabels: true, // Show labels for selected items
+        showUnselectedLabels: true, // Show labels for unselected items
         onTap: (value) {
           setState(() {
             selectedIndex = value;
@@ -45,20 +46,20 @@ class _LecturerMainScreenState extends State<LecturerMainScreen> {
         },
         items: const [
           BottomNavigationBarItem(
-            icon: Center(child: Icon(Icons.home)),
-            label: "",
+            icon: Icon(Icons.home),
+            label: "Home", // Label for Home
           ),
           BottomNavigationBarItem(
-            icon: Center(child: Icon(Icons.view_agenda)),
-            label: "",
+            icon: Icon(Icons.view_agenda),
+            label: "Timetable", // Label for Timetable
           ),
           BottomNavigationBarItem(
-            icon: Center(child: Icon(Icons.calendar_month)),
-            label: "",
+            icon: Icon(Icons.calendar_month),
+            label: "Calendar", // Label for Calendar
           ),
           BottomNavigationBarItem(
-            icon: Center(child: Icon(Icons.message)),
-            label: "",
+            icon: Icon(Icons.message),
+            label: "Chat", // Label for Chat
           ),
         ],
       ),

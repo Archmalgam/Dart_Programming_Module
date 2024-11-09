@@ -35,3 +35,42 @@ class LoginSearchupService {
     return fetchUsers("Students", "Student ID", "Student Password", "Student Name");
   }
 }
+
+class ConnectionServices {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  // Fetches timetable data ordered by DateTime
+  Stream<List<Map<String, dynamic>>> fetchTimetableData() {
+    return _db.collection('Timetable')
+        .orderBy('DateTime')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return {
+          'Subject': doc['Subject'],
+          'Room': doc['Room'],
+          'DateTime': (doc['DateTime'] as Timestamp).toDate(),
+        };
+      }).toList();
+    });
+  }
+
+  // Adds a new class to the timetable collection
+  Future<void> addClassToTimetable({
+    required String module,
+    required String topic,
+    required String intake,
+    required String room,
+    required DateTime startDateTime,
+    required DateTime endDateTime,
+  }) async {
+    await _db.collection('Timetable').add({
+      'Module': module,
+      'Topic': topic,
+      'Intake': intake,
+      'Room': room,
+      'StartDateTime': startDateTime,
+      'EndDateTime': endDateTime,
+    });
+  }
+}

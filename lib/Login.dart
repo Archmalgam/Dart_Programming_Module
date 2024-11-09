@@ -2,7 +2,6 @@ import 'package:assignmentquestion/Student/StudentHomePage.dart';
 import 'package:flutter/material.dart';
 import 'Lecturer/LecturerHomePage.dart';
 import 'ConnectionServices.dart';
-import 'Student/Function/RequestPage.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -87,7 +86,6 @@ Widget resolveHomePage(String prefix, {required String studentId}) {
     case "LC":
       return LecturerHomePage();
     case "ST":
-      SubmitRequestPage(studentId: studentId);
       return StudentHomePage(studentId: studentId); // Pass studentId here
     default:
       return LoginPage(); // Should not happen

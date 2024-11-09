@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SubmitRequestPage extends StatefulWidget {
   @override
@@ -28,8 +29,13 @@ class _SubmitRequestPageState extends State<SubmitRequestPage> {
                 children: [
                   DropdownButtonFormField<String>(
                     value: _selectedRequestType,
-                    items: ['Appointment', 'Additional Help', 'Assignment Extension']
-                        .map((type) => DropdownMenuItem(value: type, child: Text(type)))
+                    items: [
+                      'Appointment',
+                      'Additional Help',
+                      'Assignment Extension'
+                    ]
+                        .map((type) =>
+                            DropdownMenuItem(value: type, child: Text(type)))
                         .toList(),
                     onChanged: (value) {
                       setState(() {
@@ -60,22 +66,32 @@ class _SubmitRequestPageState extends State<SubmitRequestPage> {
             SizedBox(height: 24),
             // Display the request history
             Expanded(
-              child: _requestHistory.isNotEmpty
-                  ? ListView.builder(
-                      itemCount: _requestHistory.length,
-                      itemBuilder: (context, index) {
-                        final request = _requestHistory[index];
-                        return Card(
-                          child: ListTile(
-                            title: Text(request['type']),
-                            subtitle: Text(request['message']),
-                            trailing: _getStatusIcon(request['status']),
-                          ),
-                        );
-                      },
-                    )
-                  : Center(child: Text('No requests submitted yet')),
-            ),
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('requests')
+                    .orderBy('timestamp', descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  final requests = snapshot.data!.docs;
+                  return ListView.builder(
+                    itemCount: requests.length,
+                    itemBuilder: (context, index) {
+                      final request = requests[index];
+                      return Card(
+                        child: ListTile(
+                          title: Text(request['type']),
+                          subtitle: Text(request['message']),
+                          trailing: _getStatusIcon(request['status']),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            )
           ],
         ),
       ),
@@ -95,21 +111,37 @@ class _SubmitRequestPageState extends State<SubmitRequestPage> {
     }
   }
 
-  void _submitRequest() {
+  void _submitRequest() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _requestHistory.add({
-          'type': _selectedRequestType,
-          'message': _messageController.text,
-          'status': 'Pending', // Initially set to pending
+      // Create a new request object to send to Firestore
+      final requestData = {
+        'type': _selectedRequestType,
+        'message': _messageController.text,
+        'status': 'Pending', // Initially set to pending
+        'timestamp': Timestamp.now(), // Store the submission time
+      };
+
+      try {
+        // Save request data to Firestore
+        await FirebaseFirestore.instance.collection('requests').add(requestData);
+
+        // Reset form and update UI
+        setState(() {
+          _messageController.clear();
+          _selectedRequestType = 'Appointment';
+          _requestHistory.add(requestData); // Add to local history if needed
         });
-      });
 
-      // Reset form
-      _messageController.clear();
-      _selectedRequestType = 'Appointment';
-
-      // In a real-world app, you would also send this request to the backend here
+        // Show a success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Request submitted successfully!')),
+        );
+      } catch (e) {
+        // Show an error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to submit request. Please try again.')),
+        );
+      }
     }
   }
 }

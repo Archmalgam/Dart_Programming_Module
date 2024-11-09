@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SubmitRequestPage extends StatefulWidget {
+  final String studentId;
+
+  SubmitRequestPage({required this.studentId}); // Constructor with studentId
+
   @override
   _SubmitRequestPageState createState() => _SubmitRequestPageState();
 }
@@ -119,6 +123,7 @@ class _SubmitRequestPageState extends State<SubmitRequestPage> {
         'message': _messageController.text,
         'status': 'Pending', // Initially set to pending
         'timestamp': Timestamp.now(), // Store the submission time
+        'studentId': widget.studentId, // Add studentId from the passed parameter
       };
 
       try {

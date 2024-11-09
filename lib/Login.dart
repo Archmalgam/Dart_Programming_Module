@@ -67,7 +67,9 @@ class _LoginPageState extends State<LoginPage> { // Overloading
     if (isValidUser) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => resolveHomePage(firstTwoLetters)),
+        MaterialPageRoute(
+          builder: (context) => resolveHomePage(firstTwoLetters, studentId: _ID),
+        ),
       );
     } else {
       showNotification(context, 'Invalid ID or Password.', 'Login Failed');
@@ -77,18 +79,19 @@ class _LoginPageState extends State<LoginPage> { // Overloading
   }
 }
 
-Widget resolveHomePage(String prefix) {
+Widget resolveHomePage(String prefix, {required String studentId}) {
   switch (prefix) {
     case "AD":
       return LecturerHomePage();
     case "LC":
       return LecturerHomePage();
     case "ST":
-      return SubmitRequestPage();
+      return SubmitRequestPage(studentId: studentId); // Pass studentId here
     default:
       return LoginPage(); // Should not happen
   }
 }
+
 
   // Build method is overidden...
   @override

@@ -36,54 +36,70 @@ class _LoginPageState extends State<LoginPage> { // Overloading
   String _ID = ''; 
   String _password = '';
   
-  void _login() async {
+void _login() async {
   if (_formKey.currentState!.validate()) {
     String firstTwoLetters = _ID.substring(0, 2);
 
     LoginSearchupService userService = LoginSearchupService();
     List<Map<String, dynamic>> users;
     bool isValidUser = false;
+    String? userName;
 
     switch (firstTwoLetters) {
       case "AD":
         users = await userService.fetchAdministrators();
-        isValidUser = users.any((user) => user['ID'] == _ID && user['Password'] == _password);
+        isValidUser = users.any((user) {
+          if (user['ID'] == _ID && user['Password'] == _password) {
+            userName = user['Name'];
+            return true;
+          }
+          return false;
+        });
         break;
       case "SU":
-        // Assuming fetchStudents exists and works similarly
         users = await userService.fetchStudents();
-        isValidUser = users.any((user) => user['ID'] == _ID && user['Password'] == _password);
+        isValidUser = users.any((user) {
+          if (user['ID'] == _ID && user['Password'] == _password) {
+            userName = user['Name'];
+            return true;
+          }
+          return false;
+        });
         break;
       case "LC":
         users = await userService.fetchLecturers();
-        isValidUser = users.any((user) => user['ID'] == _ID && user['Password'] == _password);
+        isValidUser = users.any((user) {
+          if (user['ID'] == _ID && user['Password'] == _password) {
+            userName = user['Name'];
+            return true;
+          }
+          return false;
+        });
         break;
       default:
         showNotification(context, 'Please enter a valid ID.', 'Invalid User ID');
         return;
     }
 
-    if (isValidUser) {
+    if (isValidUser && userName != null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => resolveHomePage(firstTwoLetters)),
+        MaterialPageRoute(builder: (context) => resolveHomePage(firstTwoLetters, userName!)), // Pass both arguments
       );
     } else {
       showNotification(context, 'Invalid ID or Password.', 'Login Failed');
     }
-
-    print('ID: $_ID, Password: $_password');
   }
 }
 
-Widget resolveHomePage(String prefix) {
+Widget resolveHomePage(String prefix,  String userName) {
   switch (prefix) {
     case "AD":
-      return LecturerMainScreen();
+      return LecturerMainScreen(lecturerName: userName);
     case "LC":
-      return LecturerMainScreen();
+      return LecturerMainScreen(lecturerName: userName);
     case "SU":
-      return LecturerMainScreen();
+      return LecturerMainScreen(lecturerName: userName);
     default:
       return LoginPage(); // Should not happen
   }

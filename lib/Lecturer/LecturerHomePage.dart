@@ -10,6 +10,10 @@ var kheaderColor = const Color(0xFFd5e7ff);
 var kCardColor = const Color(0xFFf9f9fc);
 
 class LecturerHomePage extends StatelessWidget {
+  final String lecturerName;
+
+  const LecturerHomePage({Key? key, required this.lecturerName}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -59,7 +63,7 @@ class LecturerHomePage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Welcome, Professor",
+                      "Welcome, $lecturerName", 
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'LecturerHomePage.dart'; // Adjust import as per your project structure
 
 class LecturerMainScreen extends StatefulWidget {
-  const LecturerMainScreen({super.key});
+  final String lecturerName;
+
+  const LecturerMainScreen({Key? key, required this.lecturerName}) : super(key: key);
 
   @override
   _LecturerMainScreenState createState() => _LecturerMainScreenState();
@@ -11,13 +13,18 @@ class LecturerMainScreen extends StatefulWidget {
 class _LecturerMainScreenState extends State<LecturerMainScreen> {
   int selectedIndex = 0;
 
-  // Define the pages to navigate to
-  final List<Widget> pages = [
-    LecturerHomePage(), // Home page
-    Scaffold(body: Center(child: Text("Timetable Page"))), // Timetable page
-    Scaffold(body: Center(child: Text("Calendar Page"))), // Calendar page
-    Scaffold(body: Center(child: Text("Chat Page"))), // Chat page
-  ];
+  late List<Widget> pages;
+
+  @override
+  void initState() {
+    super.initState();
+    pages = [
+      LecturerHomePage(lecturerName: widget.lecturerName), // Pass name to LecturerHomePage
+      Scaffold(body: Center(child: Text("Timetable Page"))),
+      Scaffold(body: Center(child: Text("Calendar Page"))),
+      Scaffold(body: Center(child: Text("Chat Page"))),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,8 +36,8 @@ class _LecturerMainScreenState extends State<LecturerMainScreen> {
         selectedItemColor: Colors.black,
         type: BottomNavigationBarType.fixed,
         currentIndex: selectedIndex,
-        showSelectedLabels: false, // Hides labels
-        showUnselectedLabels: false, // Hides labels
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
         onTap: (value) {
           setState(() {
             selectedIndex = value;
@@ -38,19 +45,19 @@ class _LecturerMainScreenState extends State<LecturerMainScreen> {
         },
         items: const [
           BottomNavigationBarItem(
-            icon: Center(child: Icon(Icons.home)), // Home icon
+            icon: Center(child: Icon(Icons.home)),
             label: "",
           ),
           BottomNavigationBarItem(
-            icon: Center(child: Icon(Icons.view_agenda)), // Timetable icon
+            icon: Center(child: Icon(Icons.view_agenda)),
             label: "",
           ),
           BottomNavigationBarItem(
-            icon: Center(child: Icon(Icons.calendar_month)), // Calendar icon
+            icon: Center(child: Icon(Icons.calendar_month)),
             label: "",
           ),
           BottomNavigationBarItem(
-            icon: Center(child: Icon(Icons.message)), // Chat icon
+            icon: Center(child: Icon(Icons.message)),
             label: "",
           ),
         ],

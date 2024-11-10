@@ -4,7 +4,7 @@ class StudentRequestsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Manage Timetable')),
+      appBar: AppBar(title: Text('Student Request')),
       body: Center(child: Text('Timetable management functionality here')),
     );
   }

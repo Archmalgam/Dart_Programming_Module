@@ -160,6 +160,7 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+<<<<<<< HEAD
   http_parser:
     dependency: transitive
     description:
@@ -168,6 +169,16 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.2"
+=======
+  intl:
+    dependency: "direct main"
+    description:
+      name: intl
+      sha256: d6f56758b7d3014a48af9701c085700aac781a92a87a62b1333b46d8879661cf
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.19.0"
+>>>>>>> 7c12323322d4dfbbac5a6bd425015193e031a2ba
   leak_tracker:
     dependency: transitive
     description:

@@ -1,6 +1,5 @@
-import 'package:assignmentquestion/Student/StudentHomePage.dart';
 import 'package:flutter/material.dart';
-import 'Lecturer/LecturerHomePage.dart';
+import 'Lecturer/Lecturer_navigation_bar.dart';
 import 'ConnectionServices.dart';
 
 class LoginPage extends StatefulWidget {
@@ -37,61 +36,78 @@ class _LoginPageState extends State<LoginPage> { // Overloading
   String _ID = ''; 
   String _password = '';
   
-  void _login() async {
+void _login() async {
   if (_formKey.currentState!.validate()) {
     String firstTwoLetters = _ID.substring(0, 2);
 
     LoginSearchupService userService = LoginSearchupService();
     List<Map<String, dynamic>> users;
     bool isValidUser = false;
+    String? userName;
+    String? lecturerId; // Declare lecturerId variable
 
     switch (firstTwoLetters) {
       case "AD":
         users = await userService.fetchAdministrators();
-        isValidUser = users.any((user) => user['ID'] == _ID && user['Password'] == _password);
+        isValidUser = users.any((user) {
+          if (user['ID'] == _ID && user['Password'] == _password) {
+            userName = user['Name'];
+            return true;
+          }
+          return false;
+        });
         break;
-      case "ST":
-        // Assuming fetchStudents exists and works similarly
+      case "SU":
         users = await userService.fetchStudents();
-        isValidUser = users.any((user) => user['ID'] == _ID && user['Password'] == _password);
+        isValidUser = users.any((user) {
+          if (user['ID'] == _ID && user['Password'] == _password) {
+            userName = user['Name'];
+            return true;
+          }
+          return false;
+        });
         break;
       case "LC":
         users = await userService.fetchLecturers();
-        isValidUser = users.any((user) => user['ID'] == _ID && user['Password'] == _password);
+        isValidUser = users.any((user) {
+          if (user['ID'] == _ID && user['Password'] == _password) {
+            userName = user['Name'];
+            lecturerId = user['ID']; // Assign lecturer ID
+            return true;
+          }
+          return false;
+        });
         break;
       default:
         showNotification(context, 'Please enter a valid ID.', 'Invalid User ID');
         return;
     }
 
-    if (isValidUser) {
+    if (isValidUser && userName != null) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => resolveHomePage(firstTwoLetters, studentId: _ID),
+          builder: (context) => resolveHomePage(firstTwoLetters, userName!, lecturerId),
         ),
       );
     } else {
       showNotification(context, 'Invalid ID or Password.', 'Login Failed');
     }
-
-    print('ID: $_ID, Password: $_password');
   }
 }
 
-Widget resolveHomePage(String prefix, {required String studentId}) {
+Widget resolveHomePage(String prefix, String userName, String? lecturerId) {
   switch (prefix) {
     case "AD":
-      return LecturerHomePage();
+      return LecturerMainScreen(lecturerName: userName, lecturerId: lecturerId!); // Admin screen
     case "LC":
-      return LecturerHomePage();
-    case "ST":
-      return StudentHomePage(studentId: studentId); // Pass studentId here
+      return LecturerMainScreen(lecturerName: userName, lecturerId: lecturerId!); // Lecturer screen with lecturerId
+    case "SU":
+      return LecturerMainScreen(lecturerName: userName, lecturerId: lecturerId!); // Student screen
     default:
-      return LoginPage(); // Should not happen
+      return LoginPage();
   }
 }
-
 
   // Build method is overidden...
   @override

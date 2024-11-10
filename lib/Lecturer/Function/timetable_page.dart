@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../drawer_navigation.dart';
@@ -41,21 +42,44 @@ class TimetablePage extends StatefulWidget {
     }
   }
 
-  Future<void> pickAndUploadFile() async {
+  // Lock to prevent multiple dialog openings
+  bool isPickingFile = false;
+
+  Future<void> pickAndUploadFile(Map<String, dynamic> classData) async {
+    // Check if a file picker is already active
+    if (isPickingFile) return;
+
+    isPickingFile = true; // Lock the file picker
+
     try {
       // Pick a file using file picker
       FilePickerResult? result = await FilePicker.platform.pickFiles();
 
       if (result != null && result.files.single.path != null) {
         String filePath = result.files.single.path!;
-        String documentId = DateTime.now().millisecondsSinceEpoch.toString();  // Generate a unique document ID
+        String fileName = result.files.single.name; // Retrieve the name of the selected file
 
-        // Upload file to Firestore as Base64
-        await _connectionServices.uploadFileToFirestore(filePath, documentId);
+        // Generate a unique document ID automatically using Firestore
+        String documentId = FirebaseFirestore.instance.collection('FileUploads').doc().id;
+
+        // Extract predefined values from classData
+        String lecturerId = classData['LecturerId'];
+        String module = classData['Module'];
+        String intake = classData['Intake'];
+
+        // Upload file to Firestore with additional metadata
+        await FirebaseFirestore.instance.collection('FileUploads').doc(documentId).set({
+          'filePath': filePath,
+          'fileName': fileName, // Store the file name
+          'lecturerId': lecturerId,
+          'module': module,
+          'intake': intake,
+          'uploadedAt': Timestamp.now(),
+        });
 
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("File uploaded successfully to Firestore!"))
+          SnackBar(content: Text("File '$fileName' uploaded successfully to Firestore!"))
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -67,6 +91,8 @@ class TimetablePage extends StatefulWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("File upload error: $e"))
       );
+    } finally {
+      isPickingFile = false; // Release the lock
     }
   }
 
@@ -384,24 +410,9 @@ class TimetablePage extends StatefulWidget {
                                 children: [
                                   IconButton(
                                     onPressed: () async {
-                                      // Pick a file using file picker
-                                      FilePickerResult? result = await FilePicker.platform.pickFiles();
-                                      
-                                      if (result != null && result.files.single.path != null) {
-                                        String filePath = result.files.single.path!;
-                                        String documentId = DateTime.now().millisecondsSinceEpoch.toString(); // Generate a unique document ID
-
-                                        // Upload file to Firestore as Base64
-                                        await _connectionServices.uploadFileToFirestore(filePath, documentId);
-
-                                        // Show success message
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text("File uploaded successfully!"))
-                                        );
-                                      } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text("No file selected"))
-                                        );
+                                      // Prevent double-triggering by ensuring the flag is set
+                                      if (!isPickingFile) {
+                                        await pickAndUploadFile(classData); // Pass the classData to upload the file with the metadata
                                       }
                                     },
                                     icon: Icon(Icons.upload_file, color: Colors.blue),

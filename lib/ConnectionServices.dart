@@ -84,12 +84,16 @@ class ConnectionServices {
   }
 
   // Method to upload file data as Base64 string to Firestore
-  Future<void> uploadFileToFirestore(String filePath, String documentId) async {
+  Future<void> uploadFileToFirestore({
+    required String filePath,
+    required String documentId,
+    required String lecturerId,
+    required String module,
+    required String intake,
+  }) async {
     try {
       File file = File(filePath);
-      // Read the file as bytes
       List<int> fileBytes = await file.readAsBytes();
-      // Encode the bytes to a Base64 string
       String base64String = base64Encode(fileBytes);
 
       // Store Base64 string in Firestore with additional metadata
@@ -97,9 +101,12 @@ class ConnectionServices {
         'fileName': filePath.split('/').last,
         'fileData': base64String,
         'uploadedAt': FieldValue.serverTimestamp(),
+        'lecturerId': lecturerId,
+        'module': module,
+        'intake': intake,
       });
 
-      print("File uploaded successfully to Firestore as Base64");
+      print("File uploaded successfully to Firestore with metadata");
     } catch (e) {
       print("Error uploading file to Firestore: $e");
     }

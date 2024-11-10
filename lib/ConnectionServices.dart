@@ -1,4 +1,7 @@
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:io';
+import 'dart:convert';
 
 class LoginSearchupService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -78,5 +81,27 @@ class ConnectionServices {
       'EndDateTime': endDateTime,
       'LecturerId': lecturerId, 
     });
+  }
+
+  // Method to upload file data as Base64 string to Firestore
+  Future<void> uploadFileToFirestore(String filePath, String documentId) async {
+    try {
+      File file = File(filePath);
+      // Read the file as bytes
+      List<int> fileBytes = await file.readAsBytes();
+      // Encode the bytes to a Base64 string
+      String base64String = base64Encode(fileBytes);
+
+      // Store Base64 string in Firestore with additional metadata
+      await _db.collection('FileUploads').doc(documentId).set({
+        'fileName': filePath.split('/').last,
+        'fileData': base64String,
+        'uploadedAt': FieldValue.serverTimestamp(),
+      });
+
+      print("File uploaded successfully to Firestore as Base64");
+    } catch (e) {
+      print("Error uploading file to Firestore: $e");
+    }
   }
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../drawer_navigation.dart';
 import '../../ConnectionServices.dart'; // Import ConnectionServices
+import 'package:file_picker/file_picker.dart'; 
+
 
 class TimetablePage extends StatefulWidget {
   final String lecturerId;
@@ -12,18 +14,21 @@ class TimetablePage extends StatefulWidget {
   _TimetablePageState createState() => _TimetablePageState();
 }
 
-class _TimetablePageState extends State<TimetablePage> {
-  final ConnectionServices _connectionServices = ConnectionServices();
-  DateTime selectedDate = DateTime.now();
-  DateTime startOfSelectedWeek = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+  class _TimetablePageState extends State<TimetablePage> {
+    final ConnectionServices _connectionServices = ConnectionServices();
+    DateTime selectedDate = DateTime.now();
+    DateTime startOfSelectedWeek = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
 
-  // Define the specific start dates for "This Week", "Next Week", and "Two Weeks Ahead"
+  DateTime normalizeDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
   List<DateTime> get weekStartDates {
-    DateTime now = DateTime.now();
+    DateTime now = normalizeDate(DateTime.now());
     return [
-      DateTime(now.year, now.month, now.day - (now.weekday)), // Start of This Week (Monday)
-      DateTime(now.year, now.month, now.day + (7 - now.weekday)), // Start of Next Week (Monday)
-      DateTime(now.year, now.month, now.day + (14 - now.weekday)), // Start of Two Weeks Ahead (Monday)
+      normalizeDate(now.subtract(Duration(days: now.weekday - 1))), // Start of This Week (Monday)
+      normalizeDate(now.add(Duration(days: 7 - now.weekday))),      // Start of Next Week (Monday)
+      normalizeDate(now.add(Duration(days: 14 - now.weekday))),     // Start of Two Weeks Ahead (Monday)
     ];
   }
 
@@ -31,8 +36,37 @@ class _TimetablePageState extends State<TimetablePage> {
     if (newWeekStartDate != null) {
       setState(() {
         startOfSelectedWeek = newWeekStartDate;
-        selectedDate = startOfSelectedWeek; // Reset selected date to match the new week start
+        selectedDate = newWeekStartDate; // Reset selected date to match the new week start
       });
+    }
+  }
+
+  Future<void> pickAndUploadFile() async {
+    try {
+      // Pick a file using file picker
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+      if (result != null && result.files.single.path != null) {
+        String filePath = result.files.single.path!;
+        String documentId = DateTime.now().millisecondsSinceEpoch.toString();  // Generate a unique document ID
+
+        // Upload file to Firestore as Base64
+        await _connectionServices.uploadFileToFirestore(filePath, documentId);
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("File uploaded successfully to Firestore!"))
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("No file selected"))
+        );
+      }
+    } catch (e) {
+      print("File picking failed: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("File upload error: $e"))
+      );
     }
   }
 
@@ -184,21 +218,21 @@ class _TimetablePageState extends State<TimetablePage> {
                     border: Border.all(color: Colors.blueAccent, width: 1.5),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<DateTime>(
-                      value: startOfSelectedWeek,
-                      icon: Icon(Icons.arrow_drop_down, color: Colors.blueAccent),
-                      onChanged: _onWeekChanged,
-                      items: weekStartDates.map((DateTime date) {
-                        return DropdownMenuItem<DateTime>(
-                          value: date,
-                          child: Text(
-                            DateFormat('dd MMM yyyy').format(date),
-                            style: TextStyle(color: Colors.blueAccent),
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                  child:DropdownButton<DateTime>(
+                    value: startOfSelectedWeek,
+                    icon: Icon(Icons.arrow_drop_down, color: Colors.blueAccent),
+                    onChanged: _onWeekChanged,
+                    items: weekStartDates.map((DateTime date) {
+                      String formattedDate = DateFormat('dd MMM yyyy').format(date); // Format date as "10 Nov 2024"
+                      
+                      return DropdownMenuItem<DateTime>(
+                        value: date,
+                        child: Text(
+                          formattedDate, // Display the formatted date instead of labels
+                          style: TextStyle(color: Colors.blueAccent),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ),
               ],
@@ -349,17 +383,36 @@ class _TimetablePageState extends State<TimetablePage> {
                               Column(
                                 children: [
                                   IconButton(
-                                    onPressed: () {
-                                      // Logic for uploading goes here
+                                    onPressed: () async {
+                                      // Pick a file using file picker
+                                      FilePickerResult? result = await FilePicker.platform.pickFiles();
+                                      
+                                      if (result != null && result.files.single.path != null) {
+                                        String filePath = result.files.single.path!;
+                                        String documentId = DateTime.now().millisecondsSinceEpoch.toString(); // Generate a unique document ID
+
+                                        // Upload file to Firestore as Base64
+                                        await _connectionServices.uploadFileToFirestore(filePath, documentId);
+
+                                        // Show success message
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text("File uploaded successfully!"))
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text("No file selected"))
+                                        );
+                                      }
                                     },
                                     icon: Icon(Icons.upload_file, color: Colors.blue),
                                     tooltip: "Upload",
                                   ),
+
                                   IconButton(
                                     onPressed: () {
                                       // Logic for taking attendance goes here
                                     },
-                                    icon: Icon(Icons.check_circle, color: Colors.green),
+                                    icon: Icon(Icons.how_to_reg_outlined, color: Colors.green),
                                     tooltip: "Take Attendance",
                                   ),
                                 ],

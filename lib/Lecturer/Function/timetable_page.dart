@@ -2,8 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../ConnectionServices.dart'; // Import ConnectionServices
-import 'package:file_picker/file_picker.dart'; 
-
+import 'package:file_picker/file_picker.dart';
 
 class TimetablePage extends StatefulWidget {
   final String lecturerId;
@@ -14,10 +13,11 @@ class TimetablePage extends StatefulWidget {
   _TimetablePageState createState() => _TimetablePageState();
 }
 
-  class _TimetablePageState extends State<TimetablePage> {
-    final ConnectionServices _connectionServices = ConnectionServices();
-    DateTime selectedDate = DateTime.now();
-    DateTime startOfSelectedWeek = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+class _TimetablePageState extends State<TimetablePage> {
+  final ConnectionServices _connectionServices = ConnectionServices();
+  DateTime selectedDate = DateTime.now();
+  DateTime startOfSelectedWeek =
+      DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
 
   DateTime normalizeDate(DateTime date) {
     return DateTime(date.year, date.month, date.day);
@@ -26,9 +26,12 @@ class TimetablePage extends StatefulWidget {
   List<DateTime> get weekStartDates {
     DateTime now = normalizeDate(DateTime.now());
     return [
-      normalizeDate(now.subtract(Duration(days: now.weekday - 1))), // Start of This Week (Monday)
-      normalizeDate(now.add(Duration(days: 7 - now.weekday))),      // Start of Next Week (Monday)
-      normalizeDate(now.add(Duration(days: 14 - now.weekday))),     // Start of Two Weeks Ahead (Monday)
+      normalizeDate(now.subtract(
+          Duration(days: now.weekday - 1))), // Start of This Week (Monday)
+      normalizeDate(now
+          .add(Duration(days: 7 - now.weekday))), // Start of Next Week (Monday)
+      normalizeDate(now.add(Duration(
+          days: 14 - now.weekday))), // Start of Two Weeks Ahead (Monday)
     ];
   }
 
@@ -36,7 +39,8 @@ class TimetablePage extends StatefulWidget {
     if (newWeekStartDate != null) {
       setState(() {
         startOfSelectedWeek = newWeekStartDate;
-        selectedDate = newWeekStartDate; // Reset selected date to match the new week start
+        selectedDate =
+            newWeekStartDate; // Reset selected date to match the new week start
       });
     }
   }
@@ -56,10 +60,12 @@ class TimetablePage extends StatefulWidget {
 
       if (result != null && result.files.single.path != null) {
         String filePath = result.files.single.path!;
-        String fileName = result.files.single.name; // Retrieve the name of the selected file
+        String fileName =
+            result.files.single.name; // Retrieve the name of the selected file
 
         // Generate a unique document ID automatically using Firestore
-        String documentId = FirebaseFirestore.instance.collection('FileUploads').doc().id;
+        String documentId =
+            FirebaseFirestore.instance.collection('FileUploads').doc().id;
 
         // Extract predefined values from classData
         String lecturerId = classData['LecturerId'];
@@ -67,7 +73,10 @@ class TimetablePage extends StatefulWidget {
         String intake = classData['Intake'];
 
         // Upload file to Firestore with additional metadata
-        await FirebaseFirestore.instance.collection('FileUploads').doc(documentId).set({
+        await FirebaseFirestore.instance
+            .collection('FileUploads')
+            .doc(documentId)
+            .set({
           'filePath': filePath,
           'fileName': fileName, // Store the file name
           'lecturerId': lecturerId,
@@ -77,19 +86,17 @@ class TimetablePage extends StatefulWidget {
         });
 
         // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("File '$fileName' uploaded successfully to Firestore!"))
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content:
+                Text("File '$fileName' uploaded successfully to Firestore!")));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("No file selected"))
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("No file selected")));
       }
     } catch (e) {
       print("File picking failed: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("File upload error: $e"))
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("File upload error: $e")));
     } finally {
       isPickingFile = false; // Release the lock
     }
@@ -103,7 +110,7 @@ class TimetablePage extends StatefulWidget {
     DateTime? selectedDate;
     TimeOfDay? selectedTime;
     String? selectedDuration;
-    
+
     Map<String, int> durationOptions = {
       "30 min": 30,
       "1 hour": 60,
@@ -182,7 +189,13 @@ class TimetablePage extends StatefulWidget {
             ),
             TextButton(
               onPressed: () async {
-                if (module.isNotEmpty && topic.isNotEmpty && intake.isNotEmpty && room.isNotEmpty && selectedDate != null && selectedTime != null && selectedDuration != null) {
+                if (module.isNotEmpty &&
+                    topic.isNotEmpty &&
+                    intake.isNotEmpty &&
+                    room.isNotEmpty &&
+                    selectedDate != null &&
+                    selectedTime != null &&
+                    selectedDuration != null) {
                   DateTime startDateTime = DateTime(
                     selectedDate!.year,
                     selectedDate!.month,
@@ -191,7 +204,8 @@ class TimetablePage extends StatefulWidget {
                     selectedTime!.minute,
                   );
 
-                  DateTime endDateTime = startDateTime.add(Duration(minutes: durationOptions[selectedDuration]!));
+                  DateTime endDateTime = startDateTime.add(
+                      Duration(minutes: durationOptions[selectedDuration]!));
 
                   await _connectionServices.addClassToTimetable(
                     module: module,
@@ -201,6 +215,12 @@ class TimetablePage extends StatefulWidget {
                     startDateTime: startDateTime,
                     endDateTime: endDateTime,
                     lecturerId: widget.lecturerId, // Pass lecturerId
+                  );
+                  // Show success message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("Class created successfully!"),
+                    ),
                   );
                   Navigator.of(context).pop();
                 } else {
@@ -234,7 +254,10 @@ class TimetablePage extends StatefulWidget {
               children: [
                 Text(
                   "Week",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+                  style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87),
                 ),
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 10),
@@ -242,13 +265,14 @@ class TimetablePage extends StatefulWidget {
                     border: Border.all(color: Colors.blueAccent, width: 1.5),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child:DropdownButton<DateTime>(
+                  child: DropdownButton<DateTime>(
                     value: startOfSelectedWeek,
                     icon: Icon(Icons.arrow_drop_down, color: Colors.blueAccent),
                     onChanged: _onWeekChanged,
                     items: weekStartDates.map((DateTime date) {
-                      String formattedDate = DateFormat('dd MMM yyyy').format(date); // Format date as "10 Nov 2024"
-                      
+                      String formattedDate = DateFormat('dd MMM yyyy')
+                          .format(date); // Format date as "10 Nov 2024"
+
                       return DropdownMenuItem<DateTime>(
                         value: date,
                         child: Text(
@@ -289,10 +313,13 @@ class TimetablePage extends StatefulWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(DateFormat.E().format(date),
-                            style: TextStyle(color: isActive ? Colors.white : Colors.grey)),
+                            style: TextStyle(
+                                color: isActive ? Colors.white : Colors.grey)),
                         SizedBox(height: 5),
                         Text(date.day.toString(),
-                            style: TextStyle(color: isActive ? Colors.white : Colors.black, fontSize: 16)),
+                            style: TextStyle(
+                                color: isActive ? Colors.white : Colors.black,
+                                fontSize: 16)),
                       ],
                     ),
                   ),
@@ -310,14 +337,32 @@ class TimetablePage extends StatefulWidget {
                 if (snapshot.hasError) {
                   return Center(child: Text("Error fetching data"));
                 }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Center(child: Text("No classes available."));
+                }
+
+                // Filter the timetable data for the given lecturerId
                 final timetableData = snapshot.data!
+                    .where((data) => data['LecturerId'] == widget.lecturerId)
                     .where((data) {
-                      DateTime classDate = data['StartDateTime'];
-                      return classDate.day == selectedDate.day &&
-                          classDate.month == selectedDate.month &&
-                          classDate.year == selectedDate.year;
-                    })
-                    .toList();
+                  // Extract StartDateTime value and determine its type
+                  var startDateTimeValue = data['StartDateTime'];
+                  DateTime classDate;
+
+                  if (startDateTimeValue is Timestamp) {
+                    classDate = startDateTimeValue.toDate();
+                  } else if (startDateTimeValue is DateTime) {
+                    classDate = startDateTimeValue;
+                  } else {
+                    // If the data type is incorrect, you may want to handle this with an error or a default value
+                    throw ArgumentError('StartDateTime is not a valid type');
+                  }
+
+                  // Filter based on selected date
+                  return classDate.day == selectedDate.day &&
+                      classDate.month == selectedDate.month &&
+                      classDate.year == selectedDate.year;
+                }).toList();
 
                 if (timetableData.isEmpty) {
                   return Center(child: Text("No classes on this day"));
@@ -332,11 +377,32 @@ class TimetablePage extends StatefulWidget {
                     final topic = classData['Topic'];
                     final intake = classData['Intake'];
                     final room = classData['Room'];
-                    final startDateTime = classData['StartDateTime'];
-                    final endDateTime = classData['EndDateTime'];
-                    
+
+                    // Safely handle StartDateTime and EndDateTime
+                    DateTime startDateTime;
+                    DateTime endDateTime;
+
+                    if (classData['StartDateTime'] is Timestamp) {
+                      startDateTime =
+                          (classData['StartDateTime'] as Timestamp).toDate();
+                    } else if (classData['StartDateTime'] is DateTime) {
+                      startDateTime = classData['StartDateTime'];
+                    } else {
+                      throw ArgumentError('StartDateTime is not a valid type');
+                    }
+
+                    if (classData['EndDateTime'] is Timestamp) {
+                      endDateTime =
+                          (classData['EndDateTime'] as Timestamp).toDate();
+                    } else if (classData['EndDateTime'] is DateTime) {
+                      endDateTime = classData['EndDateTime'];
+                    } else {
+                      throw ArgumentError('EndDateTime is not a valid type');
+                    }
+
                     // Format the start and end times
-                    final timeRange = "${DateFormat.jm().format(startDateTime)} - ${DateFormat.jm().format(endDateTime)}";
+                    final timeRange =
+                        "${DateFormat.jm().format(startDateTime)} - ${DateFormat.jm().format(endDateTime)}";
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,8 +419,11 @@ class TimetablePage extends StatefulWidget {
                             ),
                             SizedBox(width: 8),
                             Text(
-                              timeRange,
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black),
+                              timeRange, // Use the formatted string here
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Colors.black),
                             ),
                           ],
                         ),
@@ -365,7 +434,8 @@ class TimetablePage extends StatefulWidget {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(width: 1, color: Colors.grey[300]!),
+                            border:
+                                Border.all(width: 1, color: Colors.grey[300]!),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.grey.withOpacity(0.2),
@@ -383,21 +453,30 @@ class TimetablePage extends StatefulWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(module, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
-                                    Text(topic, style: TextStyle(color: Colors.grey, fontSize: 14)),
+                                    Text(module,
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 18)),
+                                    Text(topic,
+                                        style: TextStyle(
+                                            color: Colors.grey, fontSize: 14)),
                                     const SizedBox(height: 10),
                                     Row(
                                       children: [
-                                        Icon(Icons.school, color: Colors.grey, size: 20),
+                                        Icon(Icons.school,
+                                            color: Colors.grey, size: 20),
                                         const SizedBox(width: 8),
-                                        Text(intake, style: TextStyle(fontSize: 14)),
+                                        Text(intake,
+                                            style: TextStyle(fontSize: 14)),
                                       ],
                                     ),
                                     Row(
                                       children: [
-                                        Icon(Icons.location_on, color: Colors.grey, size: 20),
+                                        Icon(Icons.location_on,
+                                            color: Colors.grey, size: 20),
                                         const SizedBox(width: 8),
-                                        Text(room, style: TextStyle(fontSize: 14)),
+                                        Text(room,
+                                            style: TextStyle(fontSize: 14)),
                                       ],
                                     ),
                                   ],
@@ -410,18 +489,20 @@ class TimetablePage extends StatefulWidget {
                                     onPressed: () async {
                                       // Prevent double-triggering by ensuring the flag is set
                                       if (!isPickingFile) {
-                                        await pickAndUploadFile(classData); // Pass the classData to upload the file with the metadata
+                                        await pickAndUploadFile(
+                                            classData); // Pass the classData to upload the file with the metadata
                                       }
                                     },
-                                    icon: Icon(Icons.upload_file, color: Colors.blue),
+                                    icon: Icon(Icons.upload_file,
+                                        color: Colors.blue),
                                     tooltip: "Upload",
                                   ),
-
                                   IconButton(
                                     onPressed: () {
                                       // Logic for taking attendance goes here
                                     },
-                                    icon: Icon(Icons.how_to_reg_outlined, color: Colors.green),
+                                    icon: Icon(Icons.how_to_reg_outlined,
+                                        color: Colors.green),
                                     tooltip: "Take Attendance",
                                   ),
                                 ],
@@ -435,7 +516,7 @@ class TimetablePage extends StatefulWidget {
                 );
               },
             ),
-          ),
+          )
         ],
       ),
       floatingActionButton: FloatingActionButton(

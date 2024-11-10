@@ -4,8 +4,9 @@ import 'Function/timetable_page.dart';
 
 class LecturerMainScreen extends StatefulWidget {
   final String lecturerName;
+  final String lecturerId;
 
-  const LecturerMainScreen({Key? key, required this.lecturerName}) : super(key: key);
+  LecturerMainScreen({required this.lecturerName, required this.lecturerId});
 
   @override
   _LecturerMainScreenState createState() => _LecturerMainScreenState();
@@ -20,8 +21,8 @@ class _LecturerMainScreenState extends State<LecturerMainScreen> {
   void initState() {
     super.initState();
     pages = [
-      LecturerHomePage(lecturerName: widget.lecturerName), // Pass name to LecturerHomePage
-      TimetablePage(),
+      LecturerHomePage(lecturerName: widget.lecturerName, lecturerId: widget.lecturerId,), // Pass name to LecturerHomePage
+      TimetablePage(lecturerId: widget.lecturerId),
       Scaffold(body: Center(child: Text("Calendar Page"))),
       Scaffold(body: Center(child: Text("Chat Page"))),
     ];

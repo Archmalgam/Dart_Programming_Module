@@ -4,6 +4,10 @@ import '../drawer_navigation.dart';
 import '../../ConnectionServices.dart'; // Import ConnectionServices
 
 class TimetablePage extends StatefulWidget {
+  final String lecturerId;
+
+  TimetablePage({required this.lecturerId});
+
   @override
   _TimetablePageState createState() => _TimetablePageState();
 }
@@ -12,7 +16,7 @@ class _TimetablePageState extends State<TimetablePage> {
   final ConnectionServices _connectionServices = ConnectionServices();
   DateTime selectedDate = DateTime.now();
 
-  // Helper to get the start of the current week (Monday)
+    // Helper to get the start of the current week (Monday)
   DateTime get startOfWeek {
     DateTime now = DateTime.now();
     return now.subtract(Duration(days: now.weekday - 1));
@@ -24,7 +28,6 @@ class _TimetablePageState extends State<TimetablePage> {
     return List.generate(7, (index) => start.add(Duration(days: index)));
   }
 
-  // Open a dialog form for creating a new class
   void CreateClass(BuildContext context) {
     String module = "";
     String topic = "";
@@ -34,7 +37,6 @@ class _TimetablePageState extends State<TimetablePage> {
     TimeOfDay? selectedTime;
     String? selectedDuration;
     
-    // Define available durations in minutes
     Map<String, int> durationOptions = {
       "30 min": 30,
       "1 hour": 60,
@@ -69,7 +71,6 @@ class _TimetablePageState extends State<TimetablePage> {
                   decoration: InputDecoration(labelText: "Room"),
                   onChanged: (value) => room = value,
                 ),
-                // Move Duration selection before Date and Time selection
                 DropdownButtonFormField<String>(
                   decoration: InputDecoration(labelText: "Duration"),
                   value: selectedDuration,
@@ -88,7 +89,6 @@ class _TimetablePageState extends State<TimetablePage> {
                 SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () async {
-                    // Pick the date first
                     selectedDate = await showDatePicker(
                       context: context,
                       initialDate: DateTime.now(),
@@ -97,7 +97,6 @@ class _TimetablePageState extends State<TimetablePage> {
                     );
 
                     if (selectedDate != null) {
-                      // Then pick the time after selecting a date
                       selectedTime = await showTimePicker(
                         context: context,
                         initialTime: TimeOfDay.now(),
@@ -117,7 +116,6 @@ class _TimetablePageState extends State<TimetablePage> {
             TextButton(
               onPressed: () async {
                 if (module.isNotEmpty && topic.isNotEmpty && intake.isNotEmpty && room.isNotEmpty && selectedDate != null && selectedTime != null && selectedDuration != null) {
-                  // Combine the selected date and time into a single DateTime object
                   DateTime startDateTime = DateTime(
                     selectedDate!.year,
                     selectedDate!.month,
@@ -126,10 +124,8 @@ class _TimetablePageState extends State<TimetablePage> {
                     selectedTime!.minute,
                   );
 
-                  // Calculate end time based on selected duration
                   DateTime endDateTime = startDateTime.add(Duration(minutes: durationOptions[selectedDuration]!));
 
-                  // Call the connection service to add the class to Firestore
                   await _connectionServices.addClassToTimetable(
                     module: module,
                     topic: topic,
@@ -137,6 +133,7 @@ class _TimetablePageState extends State<TimetablePage> {
                     room: room,
                     startDateTime: startDateTime,
                     endDateTime: endDateTime,
+                    lecturerId: widget.lecturerId, // Pass lecturerId
                   );
                   Navigator.of(context).pop();
                 } else {
@@ -155,8 +152,6 @@ class _TimetablePageState extends State<TimetablePage> {
 
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
-
     return Scaffold(
       appBar: AppBar(
         title: Text("Timetable"),
@@ -258,9 +253,10 @@ class _TimetablePageState extends State<TimetablePage> {
                   return Center(child: Text("Error fetching data"));
                 }
 
+                // Filter the data to only show classes on the selected date
                 final timetableData = snapshot.data!
                     .where((data) {
-                      DateTime classDate = data['DateTime'];
+                      DateTime classDate = data['StartDateTime'];
                       return classDate.day == selectedDate.day &&
                           classDate.month == selectedDate.month &&
                           classDate.year == selectedDate.year;
@@ -276,10 +272,10 @@ class _TimetablePageState extends State<TimetablePage> {
                   itemCount: timetableData.length,
                   itemBuilder: (context, index) {
                     final classData = timetableData[index];
-                    final subject = classData['Subject'];
+                    final module = classData['Module'];
                     final room = classData['Room'];
-                    final dateTime = classData['DateTime'];
-                    final timeString = "${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}";
+                    final startDateTime = classData['StartDateTime'];
+                    final timeString = "${startDateTime.hour}:${startDateTime.minute.toString().padLeft(2, '0')}";
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 15),
@@ -292,7 +288,7 @@ class _TimetablePageState extends State<TimetablePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "$timeString - $subject",
+                            "$timeString - $module",
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 18,

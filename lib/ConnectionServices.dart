@@ -39,17 +39,21 @@ class LoginSearchupService {
 class ConnectionServices {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // Fetches timetable data ordered by DateTime
+  // Fetches timetable data ordered by StartDateTime
   Stream<List<Map<String, dynamic>>> fetchTimetableData() {
     return _db.collection('Timetable')
-        .orderBy('DateTime')
+        .orderBy('StartDateTime')
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
         return {
-          'Subject': doc['Subject'],
+          'Module': doc['Module'],
           'Room': doc['Room'],
-          'DateTime': (doc['DateTime'] as Timestamp).toDate(),
+          'StartDateTime': (doc['StartDateTime'] as Timestamp).toDate(),
+          'EndDateTime': (doc['EndDateTime'] as Timestamp).toDate(),
+          'Topic': doc['Topic'],
+          'Intake': doc['Intake'],
+          'LecturerId': doc['LecturerId'],
         };
       }).toList();
     });
@@ -63,6 +67,7 @@ class ConnectionServices {
     required String room,
     required DateTime startDateTime,
     required DateTime endDateTime,
+    required String lecturerId,
   }) async {
     await _db.collection('Timetable').add({
       'Module': module,
@@ -71,6 +76,7 @@ class ConnectionServices {
       'Room': room,
       'StartDateTime': startDateTime,
       'EndDateTime': endDateTime,
+      'LecturerId': lecturerId, 
     });
   }
 }

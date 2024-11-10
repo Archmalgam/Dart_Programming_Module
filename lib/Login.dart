@@ -44,6 +44,7 @@ void _login() async {
     List<Map<String, dynamic>> users;
     bool isValidUser = false;
     String? userName;
+    String? lecturerId; // Declare lecturerId variable
 
     switch (firstTwoLetters) {
       case "AD":
@@ -71,6 +72,7 @@ void _login() async {
         isValidUser = users.any((user) {
           if (user['ID'] == _ID && user['Password'] == _password) {
             userName = user['Name'];
+            lecturerId = user['ID']; // Assign lecturer ID
             return true;
           }
           return false;
@@ -84,7 +86,9 @@ void _login() async {
     if (isValidUser && userName != null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => resolveHomePage(firstTwoLetters, userName!)), // Pass both arguments
+        MaterialPageRoute(
+          builder: (context) => resolveHomePage(firstTwoLetters, userName!, lecturerId),
+        ),
       );
     } else {
       showNotification(context, 'Invalid ID or Password.', 'Login Failed');
@@ -92,16 +96,16 @@ void _login() async {
   }
 }
 
-Widget resolveHomePage(String prefix,  String userName) {
+Widget resolveHomePage(String prefix, String userName, String? lecturerId) {
   switch (prefix) {
     case "AD":
-      return LecturerMainScreen(lecturerName: userName);
+      return LecturerMainScreen(lecturerName: userName, lecturerId: lecturerId!); // Admin screen
     case "LC":
-      return LecturerMainScreen(lecturerName: userName);
+      return LecturerMainScreen(lecturerName: userName, lecturerId: lecturerId!); // Lecturer screen with lecturerId
     case "SU":
-      return LecturerMainScreen(lecturerName: userName);
+      return LecturerMainScreen(lecturerName: userName, lecturerId: lecturerId!); // Student screen
     default:
-      return LoginPage(); // Should not happen
+      return LoginPage();
   }
 }
 

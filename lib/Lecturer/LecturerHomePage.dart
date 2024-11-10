@@ -11,8 +11,9 @@ var kCardColor = const Color(0xFFf9f9fc);
 
 class LecturerHomePage extends StatelessWidget {
   final String lecturerName;
+  final String lecturerId;
 
-  const LecturerHomePage({Key? key, required this.lecturerName}) : super(key: key);
+  const LecturerHomePage({required this.lecturerName, required this.lecturerId});
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +35,7 @@ class LecturerHomePage extends StatelessWidget {
           ],
         ),
       ),
-      drawer: DrawerNavigation(),
+      drawer: DrawerNavigation(lecturerId: lecturerId),
       body: Column(
         children: [
           // Header section with profile and greeting

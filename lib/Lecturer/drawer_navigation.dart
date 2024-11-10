@@ -8,6 +8,11 @@ import 'Function/logout.dart';
 
 
 class DrawerNavigation extends StatelessWidget {
+
+  final String? lecturerId; // Make lecturerId optional
+
+  DrawerNavigation({this.lecturerId});
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -30,10 +35,24 @@ class DrawerNavigation extends StatelessWidget {
             iconColor: Color(0xFF5E738E), // Grey Blue for icons
             textColor: Color(0xFF5E738E), // Grey Blue for text
           ),
-          _createDrawerItem(
+           _createDrawerItem(
             icon: Icons.description,
             text: 'Submit eForms',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => FormsPage())),
+            onTap: () {
+              if (lecturerId != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SubmitEFormPage(lecturerId: lecturerId!),
+                  ),
+                );
+              } else {
+                // Handle case where lecturerId is null, e.g., show a dialog or snackbar
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Lecturer ID is required to submit eForms.")),
+                );
+              }
+            },
             iconColor: Color(0xFF5E738E),
             textColor: Color(0xFF5E738E),
           ),

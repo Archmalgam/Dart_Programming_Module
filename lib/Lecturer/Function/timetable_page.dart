@@ -15,17 +15,25 @@ class TimetablePage extends StatefulWidget {
 class _TimetablePageState extends State<TimetablePage> {
   final ConnectionServices _connectionServices = ConnectionServices();
   DateTime selectedDate = DateTime.now();
+  DateTime startOfSelectedWeek = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
 
-    // Helper to get the start of the current week (Monday)
-  DateTime get startOfWeek {
+  // Define the specific start dates for "This Week", "Next Week", and "Two Weeks Ahead"
+  List<DateTime> get weekStartDates {
     DateTime now = DateTime.now();
-    return now.subtract(Duration(days: now.weekday - 1));
+    return [
+      DateTime(now.year, now.month, now.day - (now.weekday)), // Start of This Week (Monday)
+      DateTime(now.year, now.month, now.day + (7 - now.weekday)), // Start of Next Week (Monday)
+      DateTime(now.year, now.month, now.day + (14 - now.weekday)), // Start of Two Weeks Ahead (Monday)
+    ];
   }
 
-  // Helper to get dates for the current week
-  List<DateTime> get currentWeekDates {
-    DateTime start = startOfWeek;
-    return List.generate(7, (index) => start.add(Duration(days: index)));
+  void _onWeekChanged(DateTime? newWeekStartDate) {
+    if (newWeekStartDate != null) {
+      setState(() {
+        startOfSelectedWeek = newWeekStartDate;
+        selectedDate = startOfSelectedWeek; // Reset selected date to match the new week start
+      });
+    }
   }
 
   void CreateClass(BuildContext context) {
@@ -161,32 +169,35 @@ class _TimetablePageState extends State<TimetablePage> {
       drawer: DrawerNavigation(),
       body: Column(
         children: [
-          // This Week Date Picker
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "This Week",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
+                  "Week",
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
                 ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      selectedDate = DateTime.now();
-                    });
-                  },
-                  child: Text(
-                    "Today",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF3c31c5),
-                      fontWeight: FontWeight.bold,
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.blueAccent, width: 1.5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<DateTime>(
+                      value: startOfSelectedWeek,
+                      icon: Icon(Icons.arrow_drop_down, color: Colors.blueAccent),
+                      onChanged: _onWeekChanged,
+                      items: weekStartDates.map((DateTime date) {
+                        return DropdownMenuItem<DateTime>(
+                          value: date,
+                          child: Text(
+                            DateFormat('dd MMM yyyy').format(date),
+                            style: TextStyle(color: Colors.blueAccent),
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ),
@@ -197,10 +208,10 @@ class _TimetablePageState extends State<TimetablePage> {
             height: 80,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: currentWeekDates.length,
+              itemCount: 7,
               itemBuilder: (context, index) {
-                DateTime date = currentWeekDates[index];
-                bool isSelected = date.day == selectedDate.day &&
+                DateTime date = startOfSelectedWeek.add(Duration(days: index));
+                bool isActive = date.day == selectedDate.day &&
                     date.month == selectedDate.month &&
                     date.year == selectedDate.year;
                 return GestureDetector(
@@ -210,30 +221,20 @@ class _TimetablePageState extends State<TimetablePage> {
                     });
                   },
                   child: Container(
-                    width: 60,
+                    width: 50,
                     margin: EdgeInsets.symmetric(horizontal: 5),
                     decoration: BoxDecoration(
-                      color: isSelected ? Color(0xFF3c31c5) : Colors.white,
+                      color: isActive ? Colors.blue : Colors.white,
                       borderRadius: BorderRadius.circular(15),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          DateFormat.E().format(date), // Mon, Tue, etc.
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.grey,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        Text(DateFormat.E().format(date),
+                            style: TextStyle(color: isActive ? Colors.white : Colors.grey)),
                         SizedBox(height: 5),
-                        Text(
-                          date.day.toString(),
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.black,
-                            fontSize: 16,
-                          ),
-                        ),
+                        Text(date.day.toString(),
+                            style: TextStyle(color: isActive ? Colors.white : Colors.black, fontSize: 16)),
                       ],
                     ),
                   ),
@@ -248,12 +249,9 @@ class _TimetablePageState extends State<TimetablePage> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
                 }
-
                 if (snapshot.hasError) {
                   return Center(child: Text("Error fetching data"));
                 }
-
-                // Filter the data to only show classes on the selected date
                 final timetableData = snapshot.data!
                     .where((data) {
                       DateTime classDate = data['StartDateTime'];
@@ -273,44 +271,103 @@ class _TimetablePageState extends State<TimetablePage> {
                   itemBuilder: (context, index) {
                     final classData = timetableData[index];
                     final module = classData['Module'];
+                    final topic = classData['Topic'];
+                    final intake = classData['Intake'];
                     final room = classData['Room'];
                     final startDateTime = classData['StartDateTime'];
-                    final timeString = "${startDateTime.hour}:${startDateTime.minute.toString().padLeft(2, '0')}";
+                    final endDateTime = classData['EndDateTime'];
+                    
+                    // Format the start and end times
+                    final timeRange = "${DateFormat.jm().format(startDateTime)} - ${DateFormat.jm().format(endDateTime)}";
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 15),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        border: Border.all(width: 1, color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "$timeString - $module",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 18,
-                              color: Colors.black,
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: Colors.orange,
+                                shape: BoxShape.circle,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Icon(Icons.location_on, color: Colors.grey, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                room,
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 16,
-                                ),
+                            SizedBox(width: 8),
+                            Text(
+                              timeRange,
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 25),
+                          padding: const EdgeInsets.all(15),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(width: 1, color: Colors.grey[300]!),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.2),
+                                blurRadius: 8,
+                                offset: Offset(0, 4),
                               ),
                             ],
                           ),
-                        ],
-                      ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Left side with class information
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(module, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
+                                    Text(topic, style: TextStyle(color: Colors.grey, fontSize: 14)),
+                                    const SizedBox(height: 10),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.school, color: Colors.grey, size: 20),
+                                        const SizedBox(width: 8),
+                                        Text(intake, style: TextStyle(fontSize: 14)),
+                                      ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.location_on, color: Colors.grey, size: 20),
+                                        const SizedBox(width: 8),
+                                        Text(room, style: TextStyle(fontSize: 14)),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Right side with buttons in a column
+                              Column(
+                                children: [
+                                  IconButton(
+                                    onPressed: () {
+                                      // Logic for uploading goes here
+                                    },
+                                    icon: Icon(Icons.upload_file, color: Colors.blue),
+                                    tooltip: "Upload",
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      // Logic for taking attendance goes here
+                                    },
+                                    icon: Icon(Icons.check_circle, color: Colors.green),
+                                    tooltip: "Take Attendance",
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     );
                   },
                 );

@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../drawer_navigation.dart';
 import '../../ConnectionServices.dart'; // Import ConnectionServices
 import 'package:file_picker/file_picker.dart'; 
 
@@ -226,7 +225,6 @@ class TimetablePage extends StatefulWidget {
         centerTitle: true,
         backgroundColor: Color(0xFFd5e7ff),
       ),
-      drawer: DrawerNavigation(),
       body: Column(
         children: [
           Padding(

@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class SubmitRequestPage extends StatefulWidget {
   final String studentId;
 
-  SubmitRequestPage({required this.studentId}); // Constructor with studentId
+  SubmitRequestPage({required this.studentId});
 
   @override
   _SubmitRequestPageState createState() => _SubmitRequestPageState();
@@ -14,7 +14,31 @@ class _SubmitRequestPageState extends State<SubmitRequestPage> {
   final _formKey = GlobalKey<FormState>();
   final _messageController = TextEditingController();
   String _selectedRequestType = 'Appointment';
-  List<Map<String, dynamic>> _requestHistory = []; // Sample request history
+  String? _selectedLecturerId; // Holds the selected lecturer's ID
+  List<Map<String, String>> _lecturers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLecturers();
+  }
+
+  // Fetch lecturers from Firestore
+  Future<void> _fetchLecturers() async {
+  final lecturerDocs = await FirebaseFirestore.instance.collection('Lecturers').get();
+  final lecturers = lecturerDocs.docs.map((doc) {
+    return {
+      'docId': doc.id, // Document ID as String
+      'lecturerId': (doc['Lecturer ID'] ?? 'Unknown').toString(), // Cast to String
+      'name': (doc['Lecturer Name'] ?? 'Unknown').toString(), // Cast to String
+    };
+  }).toList();
+
+  setState(() {
+    _lecturers = lecturers;
+  });
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -26,11 +50,32 @@ class _SubmitRequestPageState extends State<SubmitRequestPage> {
         padding: EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Form for submitting a request
             Form(
               key: _formKey,
               child: Column(
                 children: [
+                  // Dropdown for Lecturer selection
+                  DropdownButtonFormField<String>(
+                    value: _selectedLecturerId,
+                    items: _lecturers.map((lecturer) {
+                      return DropdownMenuItem<String>(
+                        value: lecturer[
+                            'lecturerId'], // Store "Lecturer ID" field as value
+                        child: Text(lecturer['name'] ??
+                            'Unknown'), // Display lecturer name
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedLecturerId = value;
+                      });
+                    },
+                    decoration: InputDecoration(labelText: 'Select Lecturer'),
+                    validator: (value) =>
+                        value == null ? 'Please select a lecturer' : null,
+                  ),
+
+                  SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     value: _selectedRequestType,
                     items: [
@@ -67,63 +112,31 @@ class _SubmitRequestPageState extends State<SubmitRequestPage> {
                 ],
               ),
             ),
-            SizedBox(height: 24),
-            // Display the request history
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('requests')
-                    .orderBy('timestamp', descending: true)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-                  final requests = snapshot.data!.docs;
-                  return ListView.builder(
-                    itemCount: requests.length,
-                    itemBuilder: (context, index) {
-                      final request = requests[index];
-                      return Card(
-                        child: ListTile(
-                          title: Text(request['type']),
-                          subtitle: Text(request['message']),
-                          trailing: _getStatusIcon(request['status']),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            )
           ],
         ),
       ),
     );
   }
 
-  Icon _getStatusIcon(String status) {
-    switch (status) {
-      case 'Pending':
-        return Icon(Icons.hourglass_empty, color: Colors.orange);
-      case 'Approved':
-        return Icon(Icons.check_circle, color: Colors.green);
-      case 'Rejected':
-        return Icon(Icons.cancel, color: Colors.red);
-      default:
-        return Icon(Icons.info_outline, color: Colors.grey);
-    }
-  }
-
+  // Submit the request with the selected lecturer and student details
   void _submitRequest() async {
     if (_formKey.currentState!.validate()) {
-      // Create a new request object to send to Firestore
+      // Find the selected lecturer's name based on _selectedLecturerId
+      final selectedLecturer = _lecturers.firstWhere(
+        (lecturer) => lecturer['lecturerId'] == _selectedLecturerId,
+        orElse: () => {'name': 'Unknown Lecturer'},
+      );
+
+      final lecturerName = selectedLecturer['name'] ?? 'Unknown Lecturer';
+
+      // Prepare the request data to send to Firestore
       final requestData = {
         'type': _selectedRequestType,
         'message': _messageController.text,
-        'status': 'Pending', // Initially set to pending
-        'timestamp': Timestamp.now(), // Store the submission time
-        'studentId': widget.studentId, // Add studentId from the passed parameter
+        'status': 'Pending', // Initial status of the request
+        'timestamp': Timestamp.now(), // Request timestamp
+        'studentId': widget.studentId, // Student ID from login
+        'lecturerId': _selectedLecturerId, // Selected lecturer's ID
       };
 
       try {
@@ -134,12 +147,12 @@ class _SubmitRequestPageState extends State<SubmitRequestPage> {
         setState(() {
           _messageController.clear();
           _selectedRequestType = 'Appointment';
-          _requestHistory.add(requestData); // Add to local history if needed
+          _selectedLecturerId = null; // Reset lecturer selection
         });
 
-        // Show a success message
+        // Show a success message with the lecturer's ID and Name
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Request submitted successfully!')),
+          SnackBar(content: Text('Request submitted successfully to Lecturer: $lecturerName')),
         );
       } catch (e) {
         // Show an error message
@@ -149,4 +162,5 @@ class _SubmitRequestPageState extends State<SubmitRequestPage> {
       }
     }
   }
+
 }

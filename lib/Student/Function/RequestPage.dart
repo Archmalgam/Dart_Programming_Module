@@ -25,20 +25,22 @@ class _SubmitRequestPageState extends State<SubmitRequestPage> {
 
   // Fetch lecturers from Firestore
   Future<void> _fetchLecturers() async {
-  final lecturerDocs = await FirebaseFirestore.instance.collection('Lecturers').get();
-  final lecturers = lecturerDocs.docs.map((doc) {
-    return {
-      'docId': doc.id, // Document ID as String
-      'lecturerId': (doc['Lecturer ID'] ?? 'Unknown').toString(), // Cast to String
-      'name': (doc['Lecturer Name'] ?? 'Unknown').toString(), // Cast to String
-    };
-  }).toList();
+    final lecturerDocs =
+        await FirebaseFirestore.instance.collection('Lecturers').get();
+    final lecturers = lecturerDocs.docs.map((doc) {
+      return {
+        'docId': doc.id, // Document ID as String
+        'lecturerId':
+            (doc['Lecturer ID'] ?? 'Unknown').toString(), // Cast to String
+        'name':
+            (doc['Lecturer Name'] ?? 'Unknown').toString(), // Cast to String
+      };
+    }).toList();
 
-  setState(() {
-    _lecturers = lecturers;
-  });
-}
-
+    setState(() {
+      _lecturers = lecturers;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -112,10 +114,79 @@ class _SubmitRequestPageState extends State<SubmitRequestPage> {
                 ],
               ),
             ),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                // Start with a basic query for debugging
+                stream: FirebaseFirestore.instance
+                    .collection('requests')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    print("Error loading requests: ${snapshot.error}");
+                    return Center(child: Text('Error loading requests.'));
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Center(child: Text('No requests submitted yet.'));
+                  }
+
+                  final requests = snapshot.data!.docs;
+                  print("Number of requests retrieved: ${requests.length}");
+
+                  return ListView.builder(
+                    itemCount: requests.length,
+                    itemBuilder: (context, index) {
+                      final request = requests[index];
+                      final requestType = request['type'] ?? 'Request';
+                      final message = request['message'] ?? '';
+                      final status = request['status'] ?? 'Pending';
+
+                      return Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.0),
+                        ),
+                        elevation: 2,
+                        margin: EdgeInsets.symmetric(
+                            vertical: 6.0, horizontal: 16.0),
+                        child: ListTile(
+                          title: Text(
+                            requestType,
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            message,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: _getStatusIcon(status),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Icon _getStatusIcon(String status) {
+    switch (status) {
+      case 'Pending':
+        return Icon(Icons.hourglass_empty, color: Colors.orange);
+      case 'Approved':
+        return Icon(Icons.check_circle, color: Colors.green);
+      case 'Rejected':
+        return Icon(Icons.cancel, color: Colors.red);
+      default:
+        return Icon(Icons.info_outline, color: Colors.grey);
+    }
   }
 
   // Submit the request with the selected lecturer and student details
@@ -141,7 +212,9 @@ class _SubmitRequestPageState extends State<SubmitRequestPage> {
 
       try {
         // Save request data to Firestore
-        await FirebaseFirestore.instance.collection('requests').add(requestData);
+        await FirebaseFirestore.instance
+            .collection('requests')
+            .add(requestData);
 
         // Reset form and update UI
         setState(() {
@@ -152,15 +225,17 @@ class _SubmitRequestPageState extends State<SubmitRequestPage> {
 
         // Show a success message with the lecturer's ID and Name
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Request submitted successfully to Lecturer: $lecturerName')),
+          SnackBar(
+              content: Text(
+                  'Request submitted successfully to Lecturer: $lecturerName')),
         );
       } catch (e) {
         // Show an error message
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to submit request. Please try again.')),
+          SnackBar(
+              content: Text('Failed to submit request. Please try again.')),
         );
       }
     }
   }
-
 }

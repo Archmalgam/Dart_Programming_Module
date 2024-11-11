@@ -3,8 +3,9 @@ import 'drawer_navigation.dart';
 
 class StudentHomePage extends StatelessWidget {
   final String studentId;
+  final String studentName;
 
-  StudentHomePage({required this.studentId});
+  StudentHomePage({required this.studentId, required this.studentName});
 
   @override
   Widget build(BuildContext context) {

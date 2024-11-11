@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'Function/TimetablePage.dart';
 import 'Function/RequestPage.dart';
 // import 'Function/room_availability_page.dart';
 // import 'Function/forms_page.dart';
@@ -44,13 +45,18 @@ class DrawerNavigation extends StatelessWidget {
             iconColor: Color(0xFF5E738E), // Grey Blue for icons
             textColor: Color(0xFF5E738E), // Grey Blue for text
           ),
-          // _createDrawerItem(
-          //   icon: Icons.room,
-          //   text: 'Check Room Availability',
-          //   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => RoomAvailabilityPage())),
-          //   iconColor: Color(0xFF5E738E), // Grey Blue for icons
-          //   textColor: Color(0xFF5E738E), // Grey Blue for text
-          // ),
+          _createDrawerItem(
+            icon: Icons.calendar_today,
+            text: 'Timetable',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) =>
+                      TimetablePage()), // Replace with your timetable page route
+            ),
+            iconColor: Color(0xFF5E738E),
+            textColor: Color(0xFF5E738E),
+          ),
           // _createDrawerItem(
           //   icon: Icons.description,
           //   text: 'Submit eForms',

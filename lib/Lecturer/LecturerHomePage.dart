@@ -1,11 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'drawer_navigation.dart';
+import 'package:intl/intl.dart';
+import 'Lecturer_drawer_navigation.dart';
 import '../current_date.dart';
 
 // Color palette
 var kBackground = const Color(0xFFf9f9fc);
 var textColor = const Color(0XFF263064);
-var secondTextColor = const Color(0XFF3c31c5);
 var kheaderColor = const Color(0xFFd5e7ff);
 var kCardColor = const Color(0xFFf9f9fc);
 
@@ -13,7 +14,8 @@ class LecturerHomePage extends StatelessWidget {
   final String lecturerName;
   final String lecturerId;
 
-  const LecturerHomePage({required this.lecturerName, required this.lecturerId});
+  const LecturerHomePage(
+      {required this.lecturerName, required this.lecturerId});
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +66,7 @@ class LecturerHomePage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Welcome, $lecturerName", 
+                      "Welcome, $lecturerName",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -94,18 +96,82 @@ class LecturerHomePage extends StatelessWidget {
               ),
               child: ListView(
                 children: [
-                  buildSectionTitle("TODAY'S CLASSES", 2),
-                  buildClassItem(
-                    "10:00 AM",
-                    "Introduction to Psychology",
-                    "https://media.istockphoto.com/id/1154642632/photo/portrait-of-brunette-woman.jpg?s=612x612&w=0&k=20&c=d8W_C2D-2rXlnkyl8EirpHGf-GpM62gBjpDoNryy98U=",
-                    "Room 101, Building A",
-                  ),
-                  buildClassItem(
-                    "2:00 PM",
-                    "Advanced Typography",
-                    "https://img.freepik.com/free-photo/close-up-businesswoman.jpg",
-                    "Room 305, Building C",
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('Timetable')
+                        .where('LecturerId', isEqualTo: lecturerId)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return Center(child: Text("Error fetching classes"));
+                      }
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return Column(
+                          children: [
+                            buildSectionTitle("TODAY'S CLASSES", 0),
+                            Center(child: Text("No classes available for today.")),
+                          ],
+                        );
+                      }
+
+                      // Get today's date
+                      DateTime today = DateTime.now();
+                      List<DocumentSnapshot> todayClasses =
+                          snapshot.data!.docs.where((doc) {
+                        DateTime startDateTime;
+                        if (doc['StartDateTime'] is Timestamp) {
+                          startDateTime =
+                              (doc['StartDateTime'] as Timestamp).toDate();
+                        } else {
+                          throw ArgumentError(
+                              'StartDateTime is not a valid type');
+                        }
+
+                        // Filter for classes that are scheduled for today
+                        return startDateTime.year == today.year &&
+                            startDateTime.month == today.month &&
+                            startDateTime.day == today.day;
+                      }).toList();
+
+                      int numberOfClasses = todayClasses.length;
+
+                      if (numberOfClasses == 0) {
+                        return Column(
+                          children: [
+                            buildSectionTitle("TODAY'S CLASSES", numberOfClasses),
+                            Center(child: Text("No classes today.")),
+                          ],
+                        );
+                      }
+
+                      return Column(
+                        children: [
+                          buildSectionTitle("TODAY'S CLASSES", numberOfClasses),
+                          ...todayClasses.map((classData) {
+                            DateTime startDateTime =
+                                (classData['StartDateTime'] as Timestamp)
+                                    .toDate();
+                            String module = classData['Module'];
+                            String room = classData['Room'];
+
+                            // Format the time
+                            String formattedTime =
+                                DateFormat.jm().format(startDateTime);
+
+                            // Use the buildClassItem method to display the class
+                            return buildClassItem(
+                              formattedTime,
+                              module,
+                              Icons.school,
+                              room,
+                            );
+                          }).toList(),
+                        ],
+                      );
+                    },
                   ),
                   SizedBox(height: 20),
                   buildSectionTitle("UPCOMING MEETINGS", 1),
@@ -129,7 +195,7 @@ class LecturerHomePage extends StatelessWidget {
   // Helper method to build a section title
   Row buildSectionTitle(String title, int count) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         RichText(
           text: TextSpan(
@@ -141,29 +207,26 @@ class LecturerHomePage extends StatelessWidget {
             ),
           ),
         ),
-        Text(
-          "See all",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: secondTextColor,
-            fontSize: 14,
-          ),
-        ),
       ],
     );
   }
 
-  // Helper method to build a class item
-  Container buildClassItem(String time, String title, String profileUrl, String location) {
+  // Helper method to build a class item with a border around it
+  Container buildClassItem(String time, String title, IconData icon, String location) {
     return Container(
-      margin: EdgeInsets.only(bottom: 15),
+      margin: EdgeInsets.only(bottom: 10, top: 10),
       padding: EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: kCardColor,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.grey.withOpacity(0.5), // Border color
+          width: 1.5, // Width of the border
+        ),
       ),
       child: Row(
         children: [
+          // Start time display
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -173,13 +236,18 @@ class LecturerHomePage extends StatelessWidget {
               ),
             ],
           ),
+          // Vertical divider to visually separate the time from the rest of the details
           VerticalDivider(color: Colors.grey.withOpacity(0.5)),
           SizedBox(width: 10),
-          CircleAvatar(
-            backgroundImage: NetworkImage(profileUrl),
-            radius: 18,
+          // Smaller icon
+          Icon(
+            icon,
+            size: 24, // Adjusted icon size to be smaller
+            color: Colors.blueAccent,
           ),
-          SizedBox(width: 10),
+          // Increased spacing between icon and text
+          SizedBox(width: 20), // Adjusted for more spacing between the icon and the text
+          // Class details (module and room)
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -187,6 +255,7 @@ class LecturerHomePage extends StatelessWidget {
                 title,
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textColor),
               ),
+              SizedBox(height: 5), // Added spacing between title and location for a cleaner look
               Text(
                 location,
                 style: TextStyle(fontSize: 13, color: textColor.withOpacity(0.6)),
@@ -225,11 +294,15 @@ class LecturerHomePage extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textColor),
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: textColor),
               ),
               Text(
                 location,
-                style: TextStyle(fontSize: 13, color: textColor.withOpacity(0.6)),
+                style:
+                    TextStyle(fontSize: 13, color: textColor.withOpacity(0.6)),
               ),
             ],
           ),

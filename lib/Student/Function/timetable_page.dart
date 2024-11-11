@@ -52,50 +52,50 @@ class _TimetablePageState extends State<TimetablePage> {
   }
 
   Stream<List<Map<String, dynamic>>> fetchTimetable() {
-  if (intake == null) return Stream.value([]);
+    if (intake == null) return Stream.value([]);
 
-  return FirebaseFirestore.instance
-      .collection('Timetable')
-      .where('Intake', isEqualTo: intake)
-      .snapshots()
-      .asyncMap((snapshot) async {
-        List<Map<String, dynamic>> timetableEntries = [];
+    return FirebaseFirestore.instance
+        .collection('Timetable')
+        .where('Intake', isEqualTo: intake)
+        .snapshots()
+        .asyncMap((snapshot) async {
+      List<Map<String, dynamic>> timetableEntries = [];
 
-        for (var doc in snapshot.docs) {
-          Map<String, dynamic> data = doc.data();
+      for (var doc in snapshot.docs) {
+        Map<String, dynamic> data = doc.data();
 
-          try {
-            // Fetch lecturer name based on LecturerId
-            if (data['LecturerId'] != null) {
-              final lecturerQuery = await FirebaseFirestore.instance
-                  .collection('Lecturers')
-                  .where('Lecturer ID', isEqualTo: data['LecturerId'])
-                  .get();
+        try {
+          // Fetch lecturer name based on LecturerId
+          if (data['LecturerId'] != null) {
+            final lecturerQuery = await FirebaseFirestore.instance
+                .collection('Lecturers')
+                .where('Lecturer ID', isEqualTo: data['LecturerId'])
+                .get();
 
-              // Check if lecturer document exists and get the name
-              if (lecturerQuery.docs.isNotEmpty) {
-                data['LecturerName'] = lecturerQuery.docs.first['Lecturer Name'];
-              } else {
-                data['LecturerName'] = "Unknown";
-              }
+            // Check if lecturer document exists and get the name
+            if (lecturerQuery.docs.isNotEmpty) {
+              data['LecturerName'] = lecturerQuery.docs.first['Lecturer Name'];
             } else {
               data['LecturerName'] = "Unknown";
             }
-
-            timetableEntries.add(data);
-            print("Timetable entry added: ${data['Module']} with Lecturer: ${data['LecturerName']}");
-          } catch (error) {
-            print("Error fetching lecturer name: $error");
+          } else {
             data['LecturerName'] = "Unknown";
-            timetableEntries.add(data);
           }
-        }
-        return timetableEntries;
-      }).handleError((error) {
-        print("Error fetching timetable: $error");
-      });
-}
 
+          timetableEntries.add(data);
+          print(
+              "Timetable entry added: ${data['Module']} with Lecturer: ${data['LecturerName']}");
+        } catch (error) {
+          print("Error fetching lecturer name: $error");
+          data['LecturerName'] = "Unknown";
+          timetableEntries.add(data);
+        }
+      }
+      return timetableEntries;
+    }).handleError((error) {
+      print("Error fetching timetable: $error");
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

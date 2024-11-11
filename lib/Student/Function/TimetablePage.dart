@@ -5,8 +5,9 @@ import '../../ConnectionServices.dart'; // Import ConnectionServices
 
 class TimetablePage extends StatefulWidget {
   final String studentId;
+  // final String studentName;
 
-  TimetablePage({required this.studentId, required studentName});
+  TimetablePage({required this.studentId});
 
   @override
   _TimetablePageState createState() => _TimetablePageState();
@@ -166,7 +167,7 @@ class _TimetablePageState extends State<TimetablePage> {
         centerTitle: true,
         backgroundColor: Color(0xFFd5e7ff),
       ),
-      drawer: DrawerNavigation(),
+      drawer: DrawerNavigation(studentId: widget.studentId),
       body: Column(
         children: [
           Padding(
@@ -186,19 +187,21 @@ class _TimetablePageState extends State<TimetablePage> {
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<DateTime>(
-                      value: startOfSelectedWeek,
-                      icon: Icon(Icons.arrow_drop_down, color: Colors.blueAccent),
-                      onChanged: _onWeekChanged,
-                      items: weekStartDates.map((DateTime date) {
-                        return DropdownMenuItem<DateTime>(
-                          value: date,
-                          child: Text(
-                            DateFormat('dd MMM yyyy').format(date),
-                            style: TextStyle(color: Colors.blueAccent),
-                          ),
-                        );
-                      }).toList(),
-                    ),
+  value: startOfSelectedWeek,
+  icon: Icon(Icons.arrow_drop_down, color: Colors.blueAccent),
+  onChanged: _onWeekChanged,
+  items: weekStartDates.toSet().map((DateTime date) {
+    return DropdownMenuItem<DateTime>(
+      value: date,
+      child: Text(
+        DateFormat('dd MMM yyyy').format(date),
+        style: TextStyle(color: Colors.blueAccent),
+      ),
+    );
+  }).toList(),
+)
+
+
                   ),
                 ),
               ],

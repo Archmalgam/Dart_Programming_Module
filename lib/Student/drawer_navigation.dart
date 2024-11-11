@@ -52,7 +52,7 @@ class DrawerNavigation extends StatelessWidget {
               context,
               MaterialPageRoute(
                   builder: (context) =>
-                      TimetablePage()), // Replace with your timetable page route
+                      TimetablePage(studentId: studentId)), // Replace with your timetable page route
             ),
             iconColor: Color(0xFF5E738E),
             textColor: Color(0xFF5E738E),

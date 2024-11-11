@@ -2,12 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../ConnectionServices.dart'; // Import ConnectionServices
-import 'upload_material.dart'; // Import the new upload_material.dart
 
 class TimetablePage extends StatefulWidget {
-  final String lecturerId;
+  final String studentId;
 
-  TimetablePage({required this.lecturerId});
+  TimetablePage({required this.studentId});
 
   @override
   _TimetablePageState createState() => _TimetablePageState();
@@ -43,142 +42,6 @@ class _TimetablePageState extends State<TimetablePage> {
             newWeekStartDate; // Reset selected date to match the new week start
       });
     }
-  }
-
-  void CreateClass(BuildContext context) {
-    String module = "";
-    String topic = "";
-    String intake = "";
-    String room = "";
-    DateTime? selectedDate;
-    TimeOfDay? selectedTime;
-    String? selectedDuration;
-
-    Map<String, int> durationOptions = {
-      "30 min": 30,
-      "1 hour": 60,
-      "1 hour 30 min": 90,
-      "2 hours": 120,
-      "2 hours 30 min": 150,
-      "3 hours": 180,
-    };
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Create New Class"),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  decoration: InputDecoration(labelText: "Module"),
-                  onChanged: (value) => module = value,
-                ),
-                TextField(
-                  decoration: InputDecoration(labelText: "Topic"),
-                  onChanged: (value) => topic = value,
-                ),
-                TextField(
-                  decoration: InputDecoration(labelText: "Intake"),
-                  onChanged: (value) => intake = value,
-                ),
-                TextField(
-                  decoration: InputDecoration(labelText: "Room"),
-                  onChanged: (value) => room = value,
-                ),
-                DropdownButtonFormField<String>(
-                  decoration: InputDecoration(labelText: "Duration"),
-                  value: selectedDuration,
-                  items: durationOptions.keys.map((String duration) {
-                    return DropdownMenuItem<String>(
-                      value: duration,
-                      child: Text(duration),
-                    );
-                  }).toList(),
-                  onChanged: (newValue) {
-                    setState(() {
-                      selectedDuration = newValue;
-                    });
-                  },
-                ),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () async {
-                    selectedDate = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2100),
-                    );
-
-                    if (selectedDate != null) {
-                      selectedTime = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.now(),
-                      );
-                    }
-                  },
-                  child: Text("Select Date and Time"),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () async {
-                if (module.isNotEmpty &&
-                    topic.isNotEmpty &&
-                    intake.isNotEmpty &&
-                    room.isNotEmpty &&
-                    selectedDate != null &&
-                    selectedTime != null &&
-                    selectedDuration != null) {
-                  DateTime startDateTime = DateTime(
-                    selectedDate!.year,
-                    selectedDate!.month,
-                    selectedDate!.day,
-                    selectedTime!.hour,
-                    selectedTime!.minute,
-                  );
-
-                  DateTime endDateTime = startDateTime.add(
-                      Duration(minutes: durationOptions[selectedDuration]!));
-
-                  await _connectionServices.addClassToTimetable(
-                    module: module,
-                    topic: topic,
-                    intake: intake,
-                    room: room,
-                    startDateTime: startDateTime,
-                    endDateTime: endDateTime,
-                    lecturerId: widget.lecturerId, // Pass lecturerId
-                  );
-
-                  // Show success message
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("Class created successfully!"),
-                    ),
-                  );
-                  Navigator.of(context).pop();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text("Please fill out all fields"),
-                  ));
-                }
-              },
-              child: Text("Create"),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -285,9 +148,9 @@ class _TimetablePageState extends State<TimetablePage> {
                   return Center(child: Text("No classes available."));
                 }
 
-                // Filter the timetable data for the given lecturerId
+                // Filter the timetable data for the given studentId
                 final timetableData = snapshot.data!
-                    .where((data) => data['LecturerId'] == widget.lecturerId)
+                    .where((data) => data['StudentId'] == widget.studentId)
                     .where((data) {
                   // Extract StartDateTime value and determine its type
                   var startDateTimeValue = data['StartDateTime'];
@@ -426,28 +289,6 @@ class _TimetablePageState extends State<TimetablePage> {
                                   ],
                                 ),
                               ),
-                              // Right side with buttons in a column
-                              Column(
-                                children: [
-                                  IconButton(
-                                    onPressed: () async {
-                                      // Call the function from the imported file
-                                      await pickAndUploadFile(context, classData);
-                                    },
-                                    icon: Icon(Icons.upload_file,
-                                        color: Colors.blue),
-                                    tooltip: "Upload",
-                                  ),
-                                  IconButton(
-                                    onPressed: () {
-                                      // Logic for taking attendance goes here
-                                    },
-                                    icon: Icon(Icons.how_to_reg_outlined,
-                                        color: Colors.green),
-                                    tooltip: "Take Attendance",
-                                  ),
-                                ],
-                              ),
                             ],
                           ),
                         ),
@@ -459,11 +300,6 @@ class _TimetablePageState extends State<TimetablePage> {
             ),
           )
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => CreateClass(context),
-        backgroundColor: Color(0xFFd5e7ff),
-        child: Icon(Icons.add),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'Lecturer/Lecturer_navigation_bar.dart';
+import 'Student/Student_navigation_bar.dart';
 import 'ConnectionServices.dart';
 
 class LoginPage extends StatefulWidget {
@@ -45,6 +46,7 @@ void _login() async {
     bool isValidUser = false;
     String? userName;
     String? lecturerId; // Declare lecturerId variable
+    String? studentId;
 
     switch (firstTwoLetters) {
       case "AD":
@@ -57,11 +59,12 @@ void _login() async {
           return false;
         });
         break;
-      case "SU":
+      case "ST":
         users = await userService.fetchStudents();
         isValidUser = users.any((user) {
           if (user['ID'] == _ID && user['Password'] == _password) {
             userName = user['Name'];
+            studentId = user['ID']; 
             return true;
           }
           return false;
@@ -87,7 +90,7 @@ void _login() async {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => resolveHomePage(firstTwoLetters, userName!, lecturerId),
+          builder: (context) => resolveHomePage(firstTwoLetters, userName!, lecturerId, studentId),
         ),
       );
     } else {
@@ -96,14 +99,14 @@ void _login() async {
   }
 }
 
-Widget resolveHomePage(String prefix, String userName, String? lecturerId) {
+Widget resolveHomePage(String prefix, String userName, String? lecturerId, String? studentId) {
   switch (prefix) {
     case "AD":
       return LecturerMainScreen(lecturerName: userName, lecturerId: lecturerId!); // Admin screen
     case "LC":
       return LecturerMainScreen(lecturerName: userName, lecturerId: lecturerId!); // Lecturer screen with lecturerId
-    case "SU":
-      return LecturerMainScreen(lecturerName: userName, lecturerId: lecturerId!); // Student screen
+    case "ST":
+      return StudentMainScreen(StudentName: userName, studentId: studentId!); // Student screen
     default:
       return LoginPage();
   }

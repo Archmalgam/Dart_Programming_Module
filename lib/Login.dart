@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'Lecturer/Lecturer_navigation_bar.dart';
 import 'Student/Student_navigation_bar.dart';
 import 'ConnectionServices.dart';
-// import 'Student/Function/RequestPage.dart';
-import 'Student/StudentHomePage.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -66,7 +64,7 @@ void _login() async {
         isValidUser = users.any((user) {
           if (user['ID'] == _ID && user['Password'] == _password) {
             userName = user['Name'];
-            studentId = user['ID'];
+            studentId = user['ID']; 
             return true;
           }
           return false;
@@ -92,7 +90,7 @@ void _login() async {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => resolveHomePage(firstTwoLetters, userName!, lecturerId, studentId!),
+          builder: (context) => resolveHomePage(firstTwoLetters, userName!, lecturerId, studentId),
         ),
       );
     } else {
@@ -108,7 +106,7 @@ Widget resolveHomePage(String prefix, String userName, String? lecturerId, Strin
     case "LC":
       return LecturerMainScreen(lecturerName: userName, lecturerId: lecturerId!); // Lecturer screen with lecturerId
     case "ST":
-      return StudentHomePage(studentId: studentId!, studentName: userName,); // Student screen
+      return StudentMainScreen(StudentName: userName, studentId: studentId!); // Student screen
     default:
       return LoginPage();
   }

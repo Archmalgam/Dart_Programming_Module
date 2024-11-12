@@ -92,7 +92,7 @@ class _CourseMaterialsScreenState extends State<CourseMaterialsScreen> {
 
       materials.add({
         'fileName': data['fileName'],
-        'filePath': data['filePath'],
+        'fileData': data['fileData'],
         'lecturerName': lecturerName,
         'module': data['module'],
         'uploadedAt': formattedDate,
@@ -102,10 +102,10 @@ class _CourseMaterialsScreenState extends State<CourseMaterialsScreen> {
     return materials;
   }
 
-  Future<void> downloadFile(String filePath) async {
+  Future<void> downloadFile(String fileData) async {
     try {
-      // Get a reference to the file in Firebase Storage using the `filePath`
-      final ref = FirebaseStorage.instance.refFromURL(filePath);
+      // Get a reference to the file in Firebase Storage using the `fileData`
+      final ref = FirebaseStorage.instance.refFromURL(fileData);
 
       // Retrieve the actual download URL
       final downloadUrl = await ref.getDownloadURL();
@@ -157,7 +157,7 @@ class _CourseMaterialsScreenState extends State<CourseMaterialsScreen> {
                       ),
                       trailing: IconButton(
                         icon: Icon(Icons.download),
-                        onPressed: () => downloadFile(material['filePath']),
+                        onPressed: () => downloadFile(material['fileData']),
                       ),
                     );
                   },

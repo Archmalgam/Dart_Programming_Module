@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'LecturerHomePage.dart'; // Adjust import as per your project structure
 import 'Function/timetable_page.dart';
+import 'Function/Student_selection_screen.dart';
 
 class LecturerMainScreen extends StatefulWidget {
   final String lecturerName;
@@ -24,7 +25,7 @@ class _LecturerMainScreenState extends State<LecturerMainScreen> {
       LecturerHomePage(lecturerName: widget.lecturerName, lecturerId: widget.lecturerId,), // Pass name to LecturerHomePage
       TimetablePage(lecturerId: widget.lecturerId),
       Scaffold(body: Center(child: Text("Calendar Page"))),
-      Scaffold(body: Center(child: Text("Chat Page"))),
+      StudentSelectionScreen(lecturerId: widget.lecturerId),
     ];
   }
 

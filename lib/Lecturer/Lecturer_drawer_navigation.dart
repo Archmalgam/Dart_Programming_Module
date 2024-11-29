@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'Function/room_availability_page.dart';
-import 'Function/forms_page.dart';
+import 'Function/eForms_page.dart';
 import 'Function/attendance_page.dart';
 import 'Function/upload_material.dart';
 import 'Function/student_requests_page.dart';
@@ -66,7 +66,21 @@ class DrawerNavigation extends StatelessWidget {
           _createDrawerItem(
             icon: Icons.thumb_up,
             text: 'Student Requests',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => StudentRequestsPage())),
+            onTap: () {
+              if (lecturerId != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StudentRequestPage(lecturerId: lecturerId!),
+                  ),
+                );
+              } else {
+                // Handle case where lecturerId is null, e.g., show a dialog or snackbar
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Lecturer ID is required to view student requests.")),
+                );
+              }
+            },
             iconColor: Color(0xFF5E738E),
             textColor: Color(0xFF5E738E),
           ),

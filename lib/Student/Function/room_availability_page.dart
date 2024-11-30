@@ -157,6 +157,16 @@ class _RoomAvailabilityPageState extends State<RoomAvailabilityPage> {
 
 
   void _showRoomDetails(BuildContext context, String roomName, List<QueryDocumentSnapshot> bookings) {
+    // Filter bookings to exclude those where the end time has passed
+    final now = DateTime.now().add(Duration(hours: 8)); // Adjust to UTC+8
+    final activeBookings = bookings.where((booking) {
+      final data = booking.data() as Map<String, dynamic>;
+      final endDateTime = data['endDateTime'] != null
+          ? (data['endDateTime'] as Timestamp).toDate().toUtc()
+          : null;
+      return endDateTime == null || endDateTime.isAfter(now); // Include only active bookings
+    }).toList();
+
     showDialog(
       context: context,
       builder: (context) {
@@ -166,12 +176,12 @@ class _RoomAvailabilityPageState extends State<RoomAvailabilityPage> {
             "Room Details - $roomName",
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey[800]),
           ),
-          content: bookings.isEmpty
-              ? Text("No bookings available.")
+          content: activeBookings.isEmpty
+              ? Text("No active bookings available.")
               : Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: bookings.map((booking) {
+                  children: activeBookings.map((booking) {
                     final data = booking.data() as Map<String, dynamic>;
                     final lecturerName = data['lecturerName'] ?? 'Unknown';
                     final startDateTime = data['startDateTime'] != null

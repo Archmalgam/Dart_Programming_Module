@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'attendance_page.dart';
 
 class TimetablePage extends StatefulWidget {
   final String studentId;
@@ -16,7 +15,6 @@ class _TimetablePageState extends State<TimetablePage> {
   String? intake;
   bool isLoading = true;
 
-  // Week Navigation and Date Selection
   final List<DateTime> weekStartDates = [
     DateTime(2024, 11, 25),
     DateTime(2024, 12, 2),
@@ -29,7 +27,7 @@ class _TimetablePageState extends State<TimetablePage> {
   void initState() {
     super.initState();
     fetchUserIntake();
-    selectedDay = selectedWeek; // Default to the first day of the selected week
+    selectedDay = selectedWeek;
   }
 
   Future<void> fetchUserIntake() async {
@@ -68,9 +66,8 @@ class _TimetablePageState extends State<TimetablePage> {
       for (var doc in snapshot.docs) {
         Map<String, dynamic> data = doc.data();
         DateTime eventDate =
-            (data['StartDateTime'] as Timestamp).toDate(); // Event date
+            (data['StartDateTime'] as Timestamp).toDate();
 
-        // Only include events matching the selected day
         if (eventDate.year == selectedDay!.year &&
             eventDate.month == selectedDay!.month &&
             eventDate.day == selectedDay!.day) {
@@ -90,6 +87,7 @@ class _TimetablePageState extends State<TimetablePage> {
               data['LecturerName'] = "Unknown";
             }
           }
+          data['Attendance'] = await fetchAttendance(doc.id);
           timetableEntries.add(data);
         }
       }
@@ -97,6 +95,24 @@ class _TimetablePageState extends State<TimetablePage> {
     }).handleError((error) {
       print("Error fetching timetable: $error");
     });
+  }
+
+  Future<bool?> fetchAttendance(String timetableId) async {
+    try {
+      final attendanceDoc = await FirebaseFirestore.instance
+          .collection('Timetable')
+          .doc(timetableId)
+          .collection('Attendance')
+          .doc(widget.studentId)
+          .get();
+
+      if (attendanceDoc.exists) {
+        return attendanceDoc.data()?['isPresent'] as bool?;
+      }
+    } catch (error) {
+      print("Error fetching attendance: $error");
+    }
+    return null; // Attendance not recorded
   }
 
   @override
@@ -143,7 +159,7 @@ class _TimetablePageState extends State<TimetablePage> {
                             onChanged: (newDate) {
                               setState(() {
                                 selectedWeek = newDate!;
-                                selectedDay = newDate; // Reset selected day
+                                selectedDay = newDate;
                               });
                             },
                           ),
@@ -159,7 +175,7 @@ class _TimetablePageState extends State<TimetablePage> {
                         children: _generateWeekDays(selectedWeek),
                       ),
                     ),
-                    // Timetable List
+                    // Timetable List with Attendance
                     Expanded(
                       child: StreamBuilder<List<Map<String, dynamic>>>(
                         stream: fetchTimetable(),
@@ -188,6 +204,17 @@ class _TimetablePageState extends State<TimetablePage> {
 
                               String formattedTime =
                                   "${DateFormat.jm().format(startTime)} - ${DateFormat.jm().format(endTime)}";
+
+                              // Attendance Status
+                              bool? isPresent = event['Attendance'];
+                              Color attendanceColor = Colors.grey;
+                              String attendanceStatus = "Not Recorded";
+                              if (isPresent != null) {
+                                attendanceColor =
+                                    isPresent ? Colors.green : Colors.red;
+                                attendanceStatus =
+                                    isPresent ? "Present" : "Absent";
+                              }
 
                               return Padding(
                                 padding: const EdgeInsets.symmetric(
@@ -225,11 +252,32 @@ class _TimetablePageState extends State<TimetablePage> {
                                                 "Unknown Lecturer"),
                                           ],
                                         ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.location_on,
+                                                size: 16, color: Colors.grey),
+                                            const SizedBox(width: 4),
+                                            Text(event['Room'] ??
+                                                "Unknown Room"),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.check_circle,
+                                                size: 16,
+                                                color: Colors.grey),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              attendanceStatus,
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: attendanceColor),
+                                            ),
+                                          ],
+                                        ),
                                       ],
-                                    ),
-                                    trailing: const Icon(
-                                      Icons.check_circle,
-                                      color: Colors.green,
                                     ),
                                   ),
                                 ),
@@ -290,7 +338,6 @@ class _TimetablePageState extends State<TimetablePage> {
     return weekDays;
   }
 
-  // Utility to get month name
   String _monthName(int month) {
     switch (month) {
       case 1:
@@ -322,7 +369,6 @@ class _TimetablePageState extends State<TimetablePage> {
     }
   }
 
-  // Utility to get day abbreviation
   String _dayAbbreviation(int weekday) {
     switch (weekday) {
       case DateTime.monday:

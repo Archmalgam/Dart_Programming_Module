@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../ConnectionServices.dart'; // Import ConnectionServices
 import 'upload_material.dart'; // Import the new upload_material.dart
+import 'attendance_page.dart';
 
 class TimetablePage extends StatefulWidget {
   final String lecturerId;
@@ -58,7 +59,8 @@ class _TimetablePageState extends State<TimetablePage> {
     final now = DateTime.now();
 
     final allRooms = <String>[]; // Store all room names
-    final roomsWithStatus = <Map<String, dynamic>>[]; // Store room names with status
+    final roomsWithStatus =
+        <Map<String, dynamic>>[]; // Store room names with status
 
     for (var doc in querySnapshot.docs) {
       String roomName = doc.id;
@@ -99,7 +101,6 @@ class _TimetablePageState extends State<TimetablePage> {
     });
   }
 
-
   DateTime normalizeDate(DateTime date) {
     return DateTime(date.year, date.month, date.day);
   }
@@ -127,237 +128,238 @@ class _TimetablePageState extends State<TimetablePage> {
   }
 
   void CreateClass(BuildContext context) {
-  String module = "";
-  String topic = "";
-  String intake = "";
-  String room = "";
-  String? selectedDuration;
+    String module = "";
+    String topic = "";
+    String intake = "";
+    String room = "";
+    String? selectedDuration;
 
-  Map<String, int> durationOptions = {
-    "30 min": 30,
-    "1 hour": 60,
-    "1 hour 30 min": 90,
-    "2 hours": 120,
-    "2 hours 30 min": 150,
-    "3 hours": 180,
-  };
+    Map<String, int> durationOptions = {
+      "30 min": 30,
+      "1 hour": 60,
+      "1 hour 30 min": 90,
+      "2 hours": 120,
+      "2 hours 30 min": 150,
+      "3 hours": 180,
+    };
 
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: Text("Create New Class"),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    decoration: InputDecoration(labelText: "Module"),
-                    onChanged: (value) => module = value,
-                  ),
-                  TextField(
-                    decoration: InputDecoration(labelText: "Topic"),
-                    onChanged: (value) => topic = value,
-                  ),
-                  DropdownButtonFormField<String>(
-                    decoration: InputDecoration(labelText: "Intake"),
-                    value: intake.isEmpty ? null : intake,
-                    items: availableIntakes.map((String availableIntake) {
-                      return DropdownMenuItem<String>(
-                        value: availableIntake,
-                        child: Text(availableIntake),
-                      );
-                    }).toList(),
-                    onChanged: (newValue) {
-                      setState(() {
-                        intake = newValue!;
-                      });
-                    },
-                  ),
-                  DropdownButtonFormField<String>(
-                    decoration: InputDecoration(labelText: "Room"),
-                    value: room.isEmpty ? null : room,
-                    items: availableRooms.map((String availableRoom) {
-                      return DropdownMenuItem<String>(
-                        value: availableRoom,
-                        child: Text(availableRoom),
-                      );
-                    }).toList(),
-                    onChanged: (newValue) {
-                      setState(() {
-                        room = newValue!;
-                      });
-                    },
-                  ),
-                  GestureDetector(
-                    onTap: () async {
-                      final DateTime? date = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2100),
-                      );
-
-                      if (date != null) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text("Create New Class"),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      decoration: InputDecoration(labelText: "Module"),
+                      onChanged: (value) => module = value,
+                    ),
+                    TextField(
+                      decoration: InputDecoration(labelText: "Topic"),
+                      onChanged: (value) => topic = value,
+                    ),
+                    DropdownButtonFormField<String>(
+                      decoration: InputDecoration(labelText: "Intake"),
+                      value: intake.isEmpty ? null : intake,
+                      items: availableIntakes.map((String availableIntake) {
+                        return DropdownMenuItem<String>(
+                          value: availableIntake,
+                          child: Text(availableIntake),
+                        );
+                      }).toList(),
+                      onChanged: (newValue) {
                         setState(() {
-                          selectedClassDate = date;
+                          intake = newValue!;
                         });
-                      }
-                    },
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: "Date",
-                        suffixIcon: Icon(
-                          Icons.calendar_today,
-                          size: 18,
+                      },
+                    ),
+                    DropdownButtonFormField<String>(
+                      decoration: InputDecoration(labelText: "Room"),
+                      value: room.isEmpty ? null : room,
+                      items: availableRooms.map((String availableRoom) {
+                        return DropdownMenuItem<String>(
+                          value: availableRoom,
+                          child: Text(availableRoom),
+                        );
+                      }).toList(),
+                      onChanged: (newValue) {
+                        setState(() {
+                          room = newValue!;
+                        });
+                      },
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        final DateTime? date = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2100),
+                        );
+
+                        if (date != null) {
+                          setState(() {
+                            selectedClassDate = date;
+                          });
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: "Date",
+                          suffixIcon: Icon(
+                            Icons.calendar_today,
+                            size: 18,
+                          ),
+                          border: UnderlineInputBorder(),
                         ),
-                        border: UnderlineInputBorder(),
-                      ),
-                      child: Text(
-                        selectedClassDate != null
-                            ? DateFormat('dd MMM yyyy')
-                                .format(selectedClassDate!)
-                            : "Select Date",
-                        style: TextStyle(
-                            color: selectedClassDate != null
-                                ? Colors.black
-                                : Colors.grey,
-                            fontSize: 16),
+                        child: Text(
+                          selectedClassDate != null
+                              ? DateFormat('dd MMM yyyy')
+                                  .format(selectedClassDate!)
+                              : "Select Date",
+                          style: TextStyle(
+                              color: selectedClassDate != null
+                                  ? Colors.black
+                                  : Colors.grey,
+                              fontSize: 16),
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 15),
-                  GestureDetector(
-                    onTap: () async {
-                      final TimeOfDay? time = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.now(),
-                      );
+                    SizedBox(height: 15),
+                    GestureDetector(
+                      onTap: () async {
+                        final TimeOfDay? time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.now(),
+                        );
 
-                      if (time != null) {
-                        setState(() {
-                          selectedClassTime = time;
-                        });
-                      }
-                    },
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: "Time",
-                        suffixIcon: Icon(
-                          Icons.access_time,
-                          size: 18,
+                        if (time != null) {
+                          setState(() {
+                            selectedClassTime = time;
+                          });
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: "Time",
+                          suffixIcon: Icon(
+                            Icons.access_time,
+                            size: 18,
+                          ),
+                          border: UnderlineInputBorder(),
                         ),
-                        border: UnderlineInputBorder(),
-                      ),
-                      child: Text(
-                        selectedClassTime != null
-                            ? selectedClassTime!.format(context)
-                            : "Select Time",
-                        style: TextStyle(
-                            color: selectedClassTime != null
-                                ? Colors.black
-                                : Colors.grey,
-                            fontSize: 16),
+                        child: Text(
+                          selectedClassTime != null
+                              ? selectedClassTime!.format(context)
+                              : "Select Time",
+                          style: TextStyle(
+                              color: selectedClassTime != null
+                                  ? Colors.black
+                                  : Colors.grey,
+                              fontSize: 16),
+                        ),
                       ),
                     ),
-                  ),
-                  DropdownButtonFormField<String>(
-                    decoration: InputDecoration(labelText: "Duration"),
-                    value: selectedDuration,
-                    items: durationOptions.keys.map((String duration) {
-                      return DropdownMenuItem<String>(
-                        value: duration,
-                        child: Text(duration),
+                    DropdownButtonFormField<String>(
+                      decoration: InputDecoration(labelText: "Duration"),
+                      value: selectedDuration,
+                      items: durationOptions.keys.map((String duration) {
+                        return DropdownMenuItem<String>(
+                          value: duration,
+                          child: Text(duration),
+                        );
+                      }).toList(),
+                      onChanged: (newValue) {
+                        setState(() {
+                          selectedDuration = newValue;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text("Cancel"),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    if (module.isNotEmpty &&
+                        topic.isNotEmpty &&
+                        intake.isNotEmpty &&
+                        room.isNotEmpty &&
+                        selectedClassDate != null &&
+                        selectedClassTime != null &&
+                        selectedDuration != null) {
+                      DateTime startDateTime = DateTime(
+                        selectedClassDate!.year,
+                        selectedClassDate!.month,
+                        selectedClassDate!.day,
+                        selectedClassTime!.hour,
+                        selectedClassTime!.minute,
                       );
-                    }).toList(),
-                    onChanged: (newValue) {
-                      setState(() {
-                        selectedDuration = newValue;
+
+                      DateTime endDateTime = startDateTime.add(
+                        Duration(minutes: durationOptions[selectedDuration]!),
+                      );
+
+                      // Add booking to the selected room's "Booking detail" subcollection
+                      await FirebaseFirestore.instance
+                          .collection('Rooms')
+                          .doc(room)
+                          .collection('Booking detail')
+                          .add({
+                        'lecturerId': widget.lecturerId,
+                        'lecturerName':
+                            "John", // Replace with dynamic value if available
+                        'startDateTime': startDateTime,
+                        'endDateTime': endDateTime,
+                        'module': module,
+                        'topic': topic,
+                        'intake': intake,
                       });
-                    },
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text("Cancel"),
-              ),
-              TextButton(
-                onPressed: () async {
-                  if (module.isNotEmpty &&
-                      topic.isNotEmpty &&
-                      intake.isNotEmpty &&
-                      room.isNotEmpty &&
-                      selectedClassDate != null &&
-                      selectedClassTime != null &&
-                      selectedDuration != null) {
-                    DateTime startDateTime = DateTime(
-                      selectedClassDate!.year,
-                      selectedClassDate!.month,
-                      selectedClassDate!.day,
-                      selectedClassTime!.hour,
-                      selectedClassTime!.minute,
-                    );
 
-                    DateTime endDateTime = startDateTime.add(
-                      Duration(minutes: durationOptions[selectedDuration]!),
-                    );
+                      // Add the same data to the "Timetable" collection
+                      await FirebaseFirestore.instance
+                          .collection('Timetable')
+                          .add({
+                        'LecturerId': widget.lecturerId,
+                        'StartDateTime': startDateTime,
+                        'EndDateTime': endDateTime,
+                        'Module': module,
+                        'Topic': topic,
+                        'Intake': intake,
+                        'Room':
+                            room, // Add room so that timetable also knows the location
+                      });
 
-                    // Add booking to the selected room's "Booking detail" subcollection
-                    await FirebaseFirestore.instance
-                        .collection('Rooms')
-                        .doc(room)
-                        .collection('Booking detail')
-                        .add({
-                      'lecturerId': widget.lecturerId,
-                      'lecturerName': "John", // Replace with dynamic value if available
-                      'startDateTime': startDateTime,
-                      'endDateTime': endDateTime,
-                      'module': module,
-                      'topic': topic,
-                      'intake': intake,
-                    });
-
-                    // Add the same data to the "Timetable" collection
-                    await FirebaseFirestore.instance
-                        .collection('Timetable')
-                        .add({
-                      'LecturerId': widget.lecturerId,
-                      'StartDateTime': startDateTime,
-                      'EndDateTime': endDateTime,
-                      'Module': module,
-                      'Topic': topic,
-                      'Intake': intake,
-                      'Room': room, // Add room so that timetable also knows the location
-                    });
-
-                    // Show success message
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text("Class created successfully!"),
-                      ),
-                    );
-                    Navigator.of(context).pop();
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text("Please fill out all fields"),
-                    ));
-                  }
-                },
-                child: Text("Create"),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
-
+                      // Show success message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Class created successfully!"),
+                        ),
+                      );
+                      Navigator.of(context).pop();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text("Please fill out all fields"),
+                      ));
+                    }
+                  },
+                  child: Text("Create"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -451,8 +453,10 @@ class _TimetablePageState extends State<TimetablePage> {
             ),
           ),
           Expanded(
-            child: StreamBuilder<List<Map<String, dynamic>>>(
-              stream: _connectionServices.fetchTimetableData(),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('Timetable')
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
@@ -460,15 +464,23 @@ class _TimetablePageState extends State<TimetablePage> {
                 if (snapshot.hasError) {
                   return Center(child: Text("Error fetching data"));
                 }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return Center(child: Text("No classes available."));
                 }
 
-                // Filter the timetable data for the given lecturerId
-                final timetableData = snapshot.data!
+                // Add this line to process the Firestore documents
+                final timetableData = snapshot.data!.docs.map((doc) {
+                  return {
+                    ...doc.data()
+                        as Map<String, dynamic>, // All document fields
+                    'id': doc.id, // Add document ID
+                  };
+                }).toList();
+
+                // Continue with your filtered and processed data
+                final filteredData = timetableData
                     .where((data) => data['LecturerId'] == widget.lecturerId)
                     .where((data) {
-                  // Extract StartDateTime value and determine its type
                   var startDateTimeValue = data['StartDateTime'];
                   DateTime classDate;
 
@@ -477,56 +489,36 @@ class _TimetablePageState extends State<TimetablePage> {
                   } else if (startDateTimeValue is DateTime) {
                     classDate = startDateTimeValue;
                   } else {
-                    // If the data type is incorrect, you may want to handle this with an error or a default value
                     throw ArgumentError('StartDateTime is not a valid type');
                   }
 
-                  // Filter based on selected date
                   return classDate.day == selectedDate.day &&
                       classDate.month == selectedDate.month &&
                       classDate.year == selectedDate.year;
                 }).toList();
 
-                if (timetableData.isEmpty) {
+                if (filteredData.isEmpty) {
                   return Center(child: Text("No classes on this day"));
                 }
 
                 return ListView.builder(
                   padding: const EdgeInsets.all(20),
-                  itemCount: timetableData.length,
+                  itemCount: filteredData.length,
                   itemBuilder: (context, index) {
-                    final classData = timetableData[index];
+                    final classData = filteredData[index];
                     final module = classData['Module'];
                     final topic = classData['Topic'];
                     final intake = classData['Intake'];
                     final room = classData['Room'];
 
                     // Safely handle StartDateTime and EndDateTime
-                    DateTime startDateTime;
-                    DateTime endDateTime;
+                    DateTime startDateTime =
+                        (classData['StartDateTime'] as Timestamp).toDate();
+                    DateTime endDateTime =
+                        (classData['EndDateTime'] as Timestamp).toDate();
 
-                    if (classData['StartDateTime'] is Timestamp) {
-                      startDateTime =
-                          (classData['StartDateTime'] as Timestamp).toDate();
-                    } else if (classData['StartDateTime'] is DateTime) {
-                      startDateTime = classData['StartDateTime'];
-                    } else {
-                      throw ArgumentError('StartDateTime is not a valid type');
-                    }
-
-                    if (classData['EndDateTime'] is Timestamp) {
-                      endDateTime =
-                          (classData['EndDateTime'] as Timestamp).toDate();
-                    } else if (classData['EndDateTime'] is DateTime) {
-                      endDateTime = classData['EndDateTime'];
-                    } else {
-                      throw ArgumentError('EndDateTime is not a valid type');
-                    }
-
-                    // Format the start and end times
                     final timeRange =
                         "${DateFormat.jm().format(startDateTime)} - ${DateFormat.jm().format(endDateTime)}";
-
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -620,12 +612,23 @@ class _TimetablePageState extends State<TimetablePage> {
                                   ),
                                   IconButton(
                                     onPressed: () {
-                                      // Logic for taking attendance goes here
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              TakeAttendancePage(
+                                            intake: classData[
+                                                'Intake'], // Pass the intake
+                                            timetableId: classData[
+                                                'id'], // Pass the timetable document ID
+                                          ),
+                                        ),
+                                      );
                                     },
                                     icon: Icon(Icons.how_to_reg_outlined,
                                         color: Colors.green),
                                     tooltip: "Take Attendance",
-                                  ),
+                                  )
                                 ],
                               ),
                             ],

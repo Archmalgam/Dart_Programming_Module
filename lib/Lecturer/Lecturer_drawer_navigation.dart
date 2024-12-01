@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'Function/room_availability_page.dart';
 import 'Function/eForms_page.dart';
-import 'Function/attendance_page.dart';
-import 'Function/upload_material.dart';
 import 'Function/student_requests_page.dart';
 import '../Logout.dart';
 
@@ -53,13 +51,6 @@ class DrawerNavigation extends StatelessWidget {
                 );
               }
             },
-            iconColor: Color(0xFF5E738E),
-            textColor: Color(0xFF5E738E),
-          ),
-          _createDrawerItem(
-            icon: Icons.access_time,
-            text: 'Track Attendance',
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => AttendancePage())),
             iconColor: Color(0xFF5E738E),
             textColor: Color(0xFF5E738E),
           ),

@@ -14,8 +14,7 @@ class StudentHomePage extends StatelessWidget {
   final String StudentName;
   final String studentId;
 
-  const StudentHomePage(
-      {required this.StudentName, required this.studentId});
+  const StudentHomePage({required this.StudentName, required this.studentId});
 
   @override
   Widget build(BuildContext context) {
@@ -98,78 +97,120 @@ class StudentHomePage extends StatelessWidget {
                 children: [
                   StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
-                        .collection('Timetable')
-                        .where('StudentId', isEqualTo: studentId)
+                        .collection('Students')
+                        .where('StudentID',
+                            isEqualTo:
+                                studentId) // Match using "Student ID" field
                         .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
+                    builder: (context, studentSnapshot) {
+                      if (studentSnapshot.connectionState ==
+                          ConnectionState.waiting) {
                         return Center(child: CircularProgressIndicator());
                       }
-                      if (snapshot.hasError) {
-                        return Center(child: Text("Error fetching classes"));
+                      if (studentSnapshot.hasError) {
+                        return Center(
+                            child: Text("Error fetching student details"));
                       }
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return Column(
-                          children: [
-                            buildSectionTitle("TODAY'S CLASSES", 0),
-                            Center(child: Text("No classes available for today.")),
-                          ],
-                        );
+                      if (!studentSnapshot.hasData ||
+                          studentSnapshot.data!.docs.isEmpty) {
+                        return Center(child: Text("Student data not found"));
                       }
 
-                      // Get today's date
-                      DateTime today = DateTime.now();
-                      List<DocumentSnapshot> todayClasses =
-                          snapshot.data!.docs.where((doc) {
-                        DateTime startDateTime;
-                        if (doc['StartDateTime'] is Timestamp) {
-                          startDateTime =
-                              (doc['StartDateTime'] as Timestamp).toDate();
-                        } else {
-                          throw ArgumentError(
-                              'StartDateTime is not a valid type');
-                        }
+                      // Get the student intake
+                      DocumentSnapshot studentDoc =
+                          studentSnapshot.data!.docs.first;
+                      String studentIntake = studentDoc['Intake'];
 
-                        // Filter for classes that are scheduled for today
-                        return startDateTime.year == today.year &&
-                            startDateTime.month == today.month &&
-                            startDateTime.day == today.day;
-                      }).toList();
-
-                      int numberOfClasses = todayClasses.length;
-
-                      if (numberOfClasses == 0) {
-                        return Column(
-                          children: [
-                            buildSectionTitle("TODAY'S CLASSES", numberOfClasses),
-                            Center(child: Text("No classes today.")),
-                          ],
-                        );
-                      }
-
-                      return Column(
-                        children: [
-                          buildSectionTitle("TODAY'S CLASSES", numberOfClasses),
-                          ...todayClasses.map((classData) {
-                            DateTime startDateTime =
-                                (classData['StartDateTime'] as Timestamp)
-                                    .toDate();
-                            String module = classData['Module'];
-                            String room = classData['Room'];
-
-                            // Format the time
-                            String formattedTime =
-                                DateFormat.jm().format(startDateTime);
-
-                            // Use the buildClassItem method to display the class
-                            return buildClassItem(
-                              formattedTime,
-                              module,
-                              Icons.school,
-                              room,
+                      // Fetch timetable data for the same intake
+                      return StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('Timetable')
+                            .where('Intake', isEqualTo: studentIntake)
+                            .snapshots(),
+                        builder: (context, timetableSnapshot) {
+                          if (timetableSnapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Center(child: CircularProgressIndicator());
+                          }
+                          if (timetableSnapshot.hasError) {
+                            return Center(
+                                child: Text("Error fetching timetable"));
+                          }
+                          if (!timetableSnapshot.hasData ||
+                              timetableSnapshot.data!.docs.isEmpty) {
+                            return Column(
+                              children: [
+                                buildSectionTitle("TODAY'S CLASSES", 0),
+                                Center(
+                                    child: Text(
+                                        "No classes available for today.")),
+                              ],
                             );
-                          }).toList(),
-                        ],
+                          }
+
+                          // Filter classes for today
+                          DateTime today = DateTime.now();
+                          List<DocumentSnapshot> todayClasses =
+                              timetableSnapshot.data!.docs.where((doc) {
+                            DateTime startDateTime;
+                            if (doc['StartDateTime'] is Timestamp) {
+                              startDateTime =
+                                  (doc['StartDateTime'] as Timestamp).toDate();
+                            } else {
+                              return false; // Invalid date format
+                            }
+
+                            // Match classes scheduled for today
+                            return startDateTime.year == today.year &&
+                                startDateTime.month == today.month &&
+                                startDateTime.day == today.day;
+                          }).toList();
+
+                          int numberOfClasses = todayClasses.length;
+
+                          if (numberOfClasses == 0) {
+                            return Column(
+                              children: [
+                                buildSectionTitle("TODAY'S CLASSES", 0),
+                                Center(
+                                    child: Text(
+                                        "No classes scheduled for today.")),
+                              ],
+                            );
+                          }
+
+                          return Column(
+                            children: [
+                              buildSectionTitle(
+                                  "TODAY'S CLASSES", numberOfClasses),
+                              ...todayClasses.map((classData) {
+                                // Extract class details
+                                DateTime startDateTime =
+                                    (classData['StartDateTime'] as Timestamp)
+                                        .toDate();
+                                DateTime endDateTime =
+                                    (classData['EndDateTime'] as Timestamp)
+                                        .toDate();
+                                String module = classData['Module'];
+                                String topic = classData['Topic'];
+                                String room = classData['Room'];
+
+                                // Format times
+                                String startTime =
+                                    DateFormat.jm().format(startDateTime);
+                                String endTime =
+                                    DateFormat.jm().format(endDateTime);
+
+                                return buildClassItem(
+                                  "$startTime - $endTime", // Time range
+                                  "$module - $topic", // Module and topic
+                                  Icons.class_, // Class icon
+                                  "Room: $room", // Room information
+                                );
+                              }).toList(),
+                            ],
+                          );
+                        },
                       );
                     },
                   ),
@@ -212,7 +253,8 @@ class StudentHomePage extends StatelessWidget {
   }
 
   // Helper method to build a class item with a border around it
-  Container buildClassItem(String time, String title, IconData icon, String location) {
+  Container buildClassItem(
+      String time, String title, IconData icon, String location) {
     return Container(
       margin: EdgeInsets.only(bottom: 10, top: 10),
       padding: EdgeInsets.all(10),
@@ -246,19 +288,27 @@ class StudentHomePage extends StatelessWidget {
             color: Colors.blueAccent,
           ),
           // Increased spacing between icon and text
-          SizedBox(width: 20), // Adjusted for more spacing between the icon and the text
+          SizedBox(
+              width:
+                  20), // Adjusted for more spacing between the icon and the text
           // Class details (module and room)
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: textColor),
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: textColor),
               ),
-              SizedBox(height: 5), // Added spacing between title and location for a cleaner look
+              SizedBox(
+                  height:
+                      5), // Added spacing between title and location for a cleaner look
               Text(
                 location,
-                style: TextStyle(fontSize: 13, color: textColor.withOpacity(0.6)),
+                style:
+                    TextStyle(fontSize: 13, color: textColor.withOpacity(0.6)),
               ),
             ],
           ),

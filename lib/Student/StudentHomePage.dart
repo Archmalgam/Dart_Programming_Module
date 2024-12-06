@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'Lecturer_drawer_navigation.dart';
+import 'Student_drawer_navigation.dart';
 import '../current_date.dart';
 
 // Color palette
@@ -10,12 +10,12 @@ var textColor = const Color(0XFF263064);
 var kheaderColor = const Color(0xFFd5e7ff);
 var kCardColor = const Color(0xFFf9f9fc);
 
-class LecturerHomePage extends StatelessWidget {
-  final String lecturerName;
-  final String lecturerId;
+class StudentHomePage extends StatelessWidget {
+  final String StudentName;
+  final String studentId;
 
-  const LecturerHomePage(
-      {required this.lecturerName, required this.lecturerId});
+  const StudentHomePage(
+      {required this.StudentName, required this.studentId});
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +37,7 @@ class LecturerHomePage extends StatelessWidget {
           ],
         ),
       ),
-      drawer: DrawerNavigation(lecturerId: lecturerId),
+      drawer: DrawerNavigation(studentId: studentId),
       body: Column(
         children: [
           // Header section with profile and greeting
@@ -66,7 +66,7 @@ class LecturerHomePage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Welcome, $lecturerName",
+                      "Welcome, $StudentName",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -99,7 +99,7 @@ class LecturerHomePage extends StatelessWidget {
                   StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('Timetable')
-                        .where('LecturerId', isEqualTo: lecturerId)
+                        .where('StudentId', isEqualTo: studentId)
                         .snapshots(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {

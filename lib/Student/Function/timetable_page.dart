@@ -1,7 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import '../../ConnectionServices.dart'; // Import ConnectionServices
 
 class TimetablePage extends StatefulWidget {
   final String studentId;
@@ -13,294 +12,381 @@ class TimetablePage extends StatefulWidget {
 }
 
 class _TimetablePageState extends State<TimetablePage> {
-  final ConnectionServices _connectionServices = ConnectionServices();
-  DateTime selectedDate = DateTime.now();
-  DateTime startOfSelectedWeek =
-      DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+  String? intake;
+  bool isLoading = true;
 
-  DateTime normalizeDate(DateTime date) {
-    return DateTime(date.year, date.month, date.day);
+  final List<DateTime> weekStartDates = [
+    DateTime(2024, 11, 25),
+    DateTime(2024, 12, 2),
+    DateTime(2024, 12, 9),
+  ];
+  DateTime selectedWeek = DateTime(2024, 11, 25);
+  DateTime? selectedDay;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserIntake();
+    selectedDay = selectedWeek;
   }
 
-  List<DateTime> get weekStartDates {
-    DateTime now = normalizeDate(DateTime.now());
-    return [
-      normalizeDate(now.subtract(
-          Duration(days: now.weekday - 1))), // Start of This Week (Monday)
-      normalizeDate(now
-          .add(Duration(days: 7 - now.weekday))), // Start of Next Week (Monday)
-      normalizeDate(now.add(Duration(
-          days: 14 - now.weekday))), // Start of Two Weeks Ahead (Monday)
-    ];
-  }
+  Future<void> fetchUserIntake() async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('Students')
+          .where('Student ID', isEqualTo: widget.studentId)
+          .get();
 
-  void _onWeekChanged(DateTime? newWeekStartDate) {
-    if (newWeekStartDate != null) {
+      if (querySnapshot.docs.isNotEmpty) {
+        final userDoc = querySnapshot.docs.first;
+
+        setState(() {
+          intake = userDoc['Intake'];
+        });
+      }
+    } catch (error) {
+      print("Error fetching user intake: $error");
+    } finally {
       setState(() {
-        startOfSelectedWeek = newWeekStartDate;
-        selectedDate =
-            newWeekStartDate; // Reset selected date to match the new week start
+        isLoading = false;
       });
     }
+  }
+
+  Stream<List<Map<String, dynamic>>> fetchTimetable() {
+    if (intake == null || selectedDay == null) return Stream.value([]);
+
+    return FirebaseFirestore.instance
+        .collection('Timetable')
+        .where('Intake', isEqualTo: intake)
+        .snapshots()
+        .asyncMap((snapshot) async {
+      List<Map<String, dynamic>> timetableEntries = [];
+
+      for (var doc in snapshot.docs) {
+        Map<String, dynamic> data = doc.data();
+        DateTime eventDate =
+            (data['StartDateTime'] as Timestamp).toDate();
+
+        if (eventDate.year == selectedDay!.year &&
+            eventDate.month == selectedDay!.month &&
+            eventDate.day == selectedDay!.day) {
+          if (data['LecturerId'] != null) {
+            try {
+              final lecturerQuery = await FirebaseFirestore.instance
+                  .collection('Lecturers')
+                  .where('Lecturer ID', isEqualTo: data['LecturerId'])
+                  .get();
+
+              if (lecturerQuery.docs.isNotEmpty) {
+                data['LecturerName'] = lecturerQuery.docs.first['Lecturer Name'];
+              } else {
+                data['LecturerName'] = "Unknown";
+              }
+            } catch (_) {
+              data['LecturerName'] = "Unknown";
+            }
+          }
+          data['Attendance'] = await fetchAttendance(doc.id);
+          timetableEntries.add(data);
+        }
+      }
+      return timetableEntries;
+    }).handleError((error) {
+      print("Error fetching timetable: $error");
+    });
+  }
+
+  Future<bool?> fetchAttendance(String timetableId) async {
+    try {
+      final attendanceDoc = await FirebaseFirestore.instance
+          .collection('Timetable')
+          .doc(timetableId)
+          .collection('Attendance')
+          .doc(widget.studentId)
+          .get();
+
+      if (attendanceDoc.exists) {
+        return attendanceDoc.data()?['isPresent'] as bool?;
+      }
+    } catch (error) {
+      print("Error fetching attendance: $error");
+    }
+    return null; // Attendance not recorded
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Timetable"),
-        centerTitle: true,
-        backgroundColor: Color(0xFFd5e7ff),
+        title: const Text("Timetable"),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Week",
-                  style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.blueAccent, width: 1.5),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: DropdownButton<DateTime>(
-                    value: startOfSelectedWeek,
-                    icon: Icon(Icons.arrow_drop_down, color: Colors.blueAccent),
-                    onChanged: _onWeekChanged,
-                    items: weekStartDates.map((DateTime date) {
-                      String formattedDate = DateFormat('dd MMM yyyy')
-                          .format(date); // Format date as "10 Nov 2024"
-
-                      return DropdownMenuItem<DateTime>(
-                        value: date,
-                        child: Text(
-                          formattedDate, // Display the formatted date instead of labels
-                          style: TextStyle(color: Colors.blueAccent),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            height: 80,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: 7,
-              itemBuilder: (context, index) {
-                DateTime date = startOfSelectedWeek.add(Duration(days: index));
-                bool isActive = date.day == selectedDate.day &&
-                    date.month == selectedDate.month &&
-                    date.year == selectedDate.year;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      selectedDate = date;
-                    });
-                  },
-                  child: Container(
-                    width: 50,
-                    margin: EdgeInsets.symmetric(horizontal: 5),
-                    decoration: BoxDecoration(
-                      color: isActive ? Colors.blue : Colors.white,
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(DateFormat.E().format(date),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : intake == null
+              ? const Center(child: Text("No intake found for the user."))
+              : Column(
+                  children: [
+                    // Week Navigation Dropdown
+                    Container(
+                      color: Colors.blue.shade100,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Week",
                             style: TextStyle(
-                                color: isActive ? Colors.white : Colors.grey)),
-                        SizedBox(height: 5),
-                        Text(date.day.toString(),
-                            style: TextStyle(
-                                color: isActive ? Colors.white : Colors.black,
-                                fontSize: 16)),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          Expanded(
-            child: StreamBuilder<List<Map<String, dynamic>>>(
-              stream: _connectionServices.fetchTimetableData(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text("Error fetching data"));
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(child: Text("No classes available."));
-                }
-
-                // Filter the timetable data for the given studentId
-                final timetableData = snapshot.data!
-                    .where((data) => data['StudentId'] == widget.studentId)
-                    .where((data) {
-                  // Extract StartDateTime value and determine its type
-                  var startDateTimeValue = data['StartDateTime'];
-                  DateTime classDate;
-
-                  if (startDateTimeValue is Timestamp) {
-                    classDate = startDateTimeValue.toDate();
-                  } else if (startDateTimeValue is DateTime) {
-                    classDate = startDateTimeValue;
-                  } else {
-                    // If the data type is incorrect, you may want to handle this with an error or a default value
-                    throw ArgumentError('StartDateTime is not a valid type');
-                  }
-
-                  // Filter based on selected date
-                  return classDate.day == selectedDate.day &&
-                      classDate.month == selectedDate.month &&
-                      classDate.year == selectedDate.year;
-                }).toList();
-
-                if (timetableData.isEmpty) {
-                  return Center(child: Text("No classes on this day"));
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: timetableData.length,
-                  itemBuilder: (context, index) {
-                    final classData = timetableData[index];
-                    final module = classData['Module'];
-                    final topic = classData['Topic'];
-                    final intake = classData['Intake'];
-                    final room = classData['Room'];
-
-                    // Safely handle StartDateTime and EndDateTime
-                    DateTime startDateTime;
-                    DateTime endDateTime;
-
-                    if (classData['StartDateTime'] is Timestamp) {
-                      startDateTime =
-                          (classData['StartDateTime'] as Timestamp).toDate();
-                    } else if (classData['StartDateTime'] is DateTime) {
-                      startDateTime = classData['StartDateTime'];
-                    } else {
-                      throw ArgumentError('StartDateTime is not a valid type');
-                    }
-
-                    if (classData['EndDateTime'] is Timestamp) {
-                      endDateTime =
-                          (classData['EndDateTime'] as Timestamp).toDate();
-                    } else if (classData['EndDateTime'] is DateTime) {
-                      endDateTime = classData['EndDateTime'];
-                    } else {
-                      throw ArgumentError('EndDateTime is not a valid type');
-                    }
-
-                    // Format the start and end times
-                    final timeRange =
-                        "${DateFormat.jm().format(startDateTime)} - ${DateFormat.jm().format(endDateTime)}";
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: Colors.orange,
-                                shape: BoxShape.circle,
-                              ),
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
                             ),
-                            SizedBox(width: 8),
-                            Text(
-                              timeRange, // Use the formatted string here
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 25),
-                          padding: const EdgeInsets.all(15),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border:
-                                Border.all(width: 1, color: Colors.grey[300]!),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.2),
-                                blurRadius: 8,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
                           ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              // Left side with class information
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(module,
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 18)),
-                                    Text(topic,
-                                        style: TextStyle(
-                                            color: Colors.grey, fontSize: 14)),
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.school,
-                                            color: Colors.grey, size: 20),
-                                        const SizedBox(width: 8),
-                                        Text(intake,
-                                            style: TextStyle(fontSize: 14)),
-                                      ],
-                                    ),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.location_on,
-                                            color: Colors.grey, size: 20),
-                                        const SizedBox(width: 8),
-                                        Text(room,
-                                            style: TextStyle(fontSize: 14)),
-                                      ],
-                                    ),
-                                  ],
+                          DropdownButton<DateTime>(
+                            value: selectedWeek,
+                            underline: const SizedBox.shrink(),
+                            items: weekStartDates.map((date) {
+                              return DropdownMenuItem<DateTime>(
+                                value: date,
+                                child: Text(
+                                  "${date.day.toString().padLeft(2, '0')} "
+                                  "${_monthName(date.month)} ${date.year}",
+                                  style: const TextStyle(color: Colors.blue),
                                 ),
-                              ),
-                            ],
+                              );
+                            }).toList(),
+                            onChanged: (newDate) {
+                              setState(() {
+                                selectedWeek = newDate!;
+                                selectedDay = newDate;
+                              });
+                            },
                           ),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-            ),
-          )
-        ],
-      ),
+                        ],
+                      ),
+                    ),
+                    // Week Days Selector
+                    Container(
+                      color: Colors.pink.shade50,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: _generateWeekDays(selectedWeek),
+                      ),
+                    ),
+                    // Timetable List with Attendance
+                    Expanded(
+                      child: StreamBuilder<List<Map<String, dynamic>>>(
+                        stream: fetchTimetable(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          }
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return const Center(
+                                child: Text("No timetable available."));
+                          }
+
+                          final timetableData = snapshot.data!;
+                          return ListView.builder(
+                            itemCount: timetableData.length,
+                            itemBuilder: (context, index) {
+                              final event = timetableData[index];
+
+                              DateTime startTime = (event['StartDateTime']
+                                      as Timestamp)
+                                  .toDate();
+                              DateTime endTime =
+                                  (event['EndDateTime'] as Timestamp).toDate();
+
+                              String formattedTime =
+                                  "${DateFormat.jm().format(startTime)} - ${DateFormat.jm().format(endTime)}";
+
+                              // Attendance Status
+                              bool? isPresent = event['Attendance'];
+                              Color attendanceColor = Colors.grey;
+                              String attendanceStatus = "Not Recorded";
+                              if (isPresent != null) {
+                                attendanceColor =
+                                    isPresent ? Colors.green : Colors.red;
+                                attendanceStatus =
+                                    isPresent ? "Present" : "Absent";
+                              }
+
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
+                                child: Card(
+                                  elevation: 4,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.all(16),
+                                    title: Text(
+                                      event['Module'] ?? "Unknown Module",
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18),
+                                    ),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          formattedTime,
+                                          style: TextStyle(
+                                              color: Colors.grey[600]),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.person,
+                                                size: 16, color: Colors.grey),
+                                            const SizedBox(width: 4),
+                                            Text(event['LecturerName'] ??
+                                                "Unknown Lecturer"),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.location_on,
+                                                size: 16, color: Colors.grey),
+                                            const SizedBox(width: 4),
+                                            Text(event['Room'] ??
+                                                "Unknown Room"),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.check_circle,
+                                                size: 16,
+                                                color: Colors.grey),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              attendanceStatus,
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: attendanceColor),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
     );
+  }
+
+  // Generate week days for the selected week
+  List<Widget> _generateWeekDays(DateTime startDate) {
+    List<Widget> weekDays = [];
+    for (int i = 0; i < 7; i++) {
+      DateTime currentDay = startDate.add(Duration(days: i));
+      weekDays.add(GestureDetector(
+        onTap: () {
+          setState(() {
+            selectedDay = currentDay;
+          });
+        },
+        child: Container(
+          width: 40,
+          decoration: BoxDecoration(
+            color: selectedDay == currentDay
+                ? Colors.blue
+                : Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            children: [
+              Text(
+                _dayAbbreviation(currentDay.weekday),
+                style: TextStyle(
+                  color:
+                      selectedDay == currentDay ? Colors.white : Colors.black,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                currentDay.day.toString(),
+                style: TextStyle(
+                  color:
+                      selectedDay == currentDay ? Colors.white : Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ));
+    }
+    return weekDays;
+  }
+
+  String _monthName(int month) {
+    switch (month) {
+      case 1:
+        return "Jan";
+      case 2:
+        return "Feb";
+      case 3:
+        return "Mar";
+      case 4:
+        return "Apr";
+      case 5:
+        return "May";
+      case 6:
+        return "Jun";
+      case 7:
+        return "Jul";
+      case 8:
+        return "Aug";
+      case 9:
+        return "Sep";
+      case 10:
+        return "Oct";
+      case 11:
+        return "Nov";
+      case 12:
+        return "Dec";
+      default:
+        return "";
+    }
+  }
+
+  String _dayAbbreviation(int weekday) {
+    switch (weekday) {
+      case DateTime.monday:
+        return "Mon";
+      case DateTime.tuesday:
+        return "Tue";
+      case DateTime.wednesday:
+        return "Wed";
+      case DateTime.thursday:
+        return "Thu";
+      case DateTime.friday:
+        return "Fri";
+      case DateTime.saturday:
+        return "Sat";
+      case DateTime.sunday:
+        return "Sun";
+      default:
+        return "";
+    }
   }
 }

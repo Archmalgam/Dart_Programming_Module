@@ -1,3 +1,5 @@
+import 'Function/CourseMaterialsScreenPage.dart';
+import 'Function/LecturerSelectionScreen.dart';
 import 'Function/submit_request.dart';
 import 'package:flutter/material.dart';
 import 'Function/room_availability_page.dart';
@@ -36,6 +38,20 @@ class DrawerNavigation extends StatelessWidget {
             icon: Icons.room,
             text: 'Check Room Availability',
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => RoomAvailabilityPage())),
+            iconColor: Color(0xFF5E738E), // Grey Blue for icons
+            textColor: Color(0xFF5E738E), // Grey Blue for text
+          ),
+          _createDrawerItem(
+            icon: Icons.chat,
+            text: 'Communicate with Lecturer',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => LecturerSelectionScreen(studentId: studentId!,))),
+            iconColor: Color(0xFF5E738E), // Grey Blue for icons
+            textColor: Color(0xFF5E738E), // Grey Blue for text
+          ),
+          _createDrawerItem(
+            icon: Icons.assignment,
+            text: 'Access Course Materials',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => CourseMaterialsScreen(studentId: studentId!,))),
             iconColor: Color(0xFF5E738E), // Grey Blue for icons
             textColor: Color(0xFF5E738E), // Grey Blue for text
           ),

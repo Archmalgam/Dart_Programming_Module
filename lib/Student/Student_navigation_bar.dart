@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'Function/LecturerSelectionScreen.dart';
 import 'StudentHomePage.dart'; // Adjust import as per your project structure
 import 'Function/timetable_page.dart';
 
@@ -24,7 +25,7 @@ class _StudentMainScreenState extends State<StudentMainScreen> {
       StudentHomePage(StudentName: widget.StudentName, studentId: widget.studentId,), // Pass name to StudentHomePage
       TimetablePage(studentId: widget.studentId),
       Scaffold(body: Center(child: Text("Calendar Page"))),
-      Scaffold(body: Center(child: Text("Chat Page"))),
+      LecturerSelectionScreen(studentId: widget.studentId),
     ];
   }
 

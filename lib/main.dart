@@ -22,7 +22,7 @@ void main() async {
   GoRouter.optionURLReflectsImperativeAPIs = true;
   usePathUrlStrategy();
 
-  await initFirebase();
+  await Firebase.initializeApp();
 
   final appState = FFAppState(); // Initialize FFAppState
   await appState.initializePersistedState();

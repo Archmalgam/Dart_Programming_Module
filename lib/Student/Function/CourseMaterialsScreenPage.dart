@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 import 'package:intl/intl.dart';
+import 'dart:io'; // For File operations
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
 
 class CourseMaterialsScreen extends StatefulWidget {
   final String studentId; // Student ID is passed here
@@ -65,6 +67,9 @@ class _CourseMaterialsScreenState extends State<CourseMaterialsScreen> {
     for (var doc in querySnapshot.docs) {
       final data = doc.data();
 
+      // Add the document ID from the snapshot
+      final documentId = doc.id;
+
       // Fetch lecturer's name based on the `Lecturer ID` field in Lecturers collection
       final lecturerId = data['lecturerId'];
       String lecturerName = 'Unknown Lecturer';
@@ -91,6 +96,7 @@ class _CourseMaterialsScreenState extends State<CourseMaterialsScreen> {
       String formattedDate = DateFormat('yyyy-MM-dd – kk:mm').format(dateTime);
 
       materials.add({
+        'documentId': documentId, // Include the document ID
         'fileName': data['fileName'],
         'fileData': data['fileData'],
         'lecturerName': lecturerName,
@@ -102,21 +108,57 @@ class _CourseMaterialsScreenState extends State<CourseMaterialsScreen> {
     return materials;
   }
 
-  Future<void> downloadFile(String fileData) async {
+  Future<void> downloadAndSaveFile(String documentId) async {
     try {
-      // Get a reference to the file in Firebase Storage using the `fileData`
-      final ref = FirebaseStorage.instance.refFromURL(fileData);
+      print('DEBUG: Document ID -> $documentId');
 
-      // Retrieve the actual download URL
-      final downloadUrl = await ref.getDownloadURL();
+      final document = await FirebaseFirestore.instance
+          .collection('FileUploads')
+          .doc(documentId)
+          .get();
 
-      // Use url_launcher to open the download URL in an external browser
-      if (!await launchUrlString(downloadUrl,
-          mode: LaunchMode.externalApplication)) {
-        throw 'Could not launch $downloadUrl';
+      if (!document.exists) {
+        throw 'Document with ID $documentId does not exist.';
+      }
+
+      final encodedFileData = document.data()?['fileData'] as String?;
+      final fileName =
+          document.data()?['fileName'] as String? ?? 'downloaded_file';
+
+      if (encodedFileData == null) {
+        throw 'File data is null.';
+      }
+
+      print('DEBUG: Retrieved fileData length: ${encodedFileData.length}');
+
+      // Decode the Base64 fileData
+      final decodedFile = base64Decode(encodedFileData);
+      print('DEBUG: Decoded file size: ${decodedFile.length}');
+
+      // Get a safe file name
+      final safeFileName = fileName.replaceAll(RegExp(r'[^\w\s\.]+'), '_');
+
+      // Get the directory to save the file
+      final directory = await getApplicationDocumentsDirectory();
+      final filePath = '${directory.path}/$safeFileName';
+      print('DEBUG: Saving file to: $filePath');
+
+      // Save the file
+      final file = File(filePath);
+      await file.writeAsBytes(decodedFile);
+
+      print('File saved successfully: $filePath');
+
+      // Open the file after saving
+      try {
+        print('DEBUG: Attempting to open file at: $filePath');
+        final result = await OpenFile.open(filePath);
+        print('OpenFile result: $result');
+      } catch (e) {
+        print('Error opening file: $e');
       }
     } catch (e) {
-      print("Error downloading file: $e");
+      print('Error downloading or saving file: $e');
     }
   }
 
@@ -145,20 +187,43 @@ class _CourseMaterialsScreenState extends State<CourseMaterialsScreen> {
                   itemCount: materials.length,
                   itemBuilder: (context, index) {
                     final material = materials[index];
+                    print(
+                        'DEBUG: Material -> $material'); // Debug each material
+
                     return ListTile(
-                      title: Text(material['fileName']),
+                      title: Text(material['fileName'] ??
+                          'Unknown File Name'), // Default for null fileName
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Module: ${material['module']}'),
-                          Text('Lecturer: ${material['lecturerName']}'),
-                          Text('Uploaded At: ${material['uploadedAt']}'),
+                          Text('Module: ${material['module'] ?? 'Unknown'}'),
+                          Text(
+                              'Lecturer: ${material['lecturerName'] ?? 'Unknown'}'),
+                          Text(
+                              'Uploaded At: ${material['uploadedAt'] ?? 'Unknown'}'),
                         ],
                       ),
                       trailing: IconButton(
                         icon: Icon(Icons.download),
-                        onPressed: () => downloadFile(material['fileData']),
+                        onPressed: () {
+                          if (material['documentId'] != null) {
+                            downloadAndSaveFile(
+                                material['documentId']); // Pass document ID
+                          } else {
+                            print('Document ID is null. Cannot download.');
+                          }
+                        },
                       ),
+                      leading: material['imageUrl'] != null
+                          ? Image.network(
+                              material['imageUrl'],
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(Icons.broken_image,
+                                    size: 50); // Handle broken images
+                              },
+                            )
+                          : Icon(Icons.image,
+                              size: 50), // Placeholder for missing imageUrl
                     );
                   },
                 );

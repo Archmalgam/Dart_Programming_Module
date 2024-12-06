@@ -41,7 +41,8 @@ dependencies:
   firebase_storage: ^12.3.4
   url_launcher: ^6.0.17
   path_provider: ^2.0.9
-  open_file: ^3.2.1
+  open_file: ^3.5.10
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:

@@ -15,6 +15,8 @@ import '/flutter_flow/lat_lng.dart';
 import '/flutter_flow/place.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'serialization_util.dart';
+import '/main.dart';
+import '/Login.dart';
 
 export 'package:go_router/go_router.dart';
 export 'serialization_util.dart';
@@ -84,8 +86,10 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: '_initialize',
           path: '/',
-          builder: (context, _) =>
-              appStateNotifier.loggedIn ? NavBarPage() : StartpageWidget(),
+          builder: (context, _) {
+            print('User logged in: ${appStateNotifier.loggedIn}');
+            return appStateNotifier.loggedIn ? NavBarPage() : LoginPage();
+          },
         ),
         FFRoute(
           name: 'HomePage',
